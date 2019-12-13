@@ -375,46 +375,40 @@ void start_general_purpose_adc() {
 // measurements
 float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
     uint32_t channel = UINT32_MAX;
+    
     if (GPIO_port == GPIOA) {
-        if (GPIO_pin == GPIO_PIN_0)
-            channel = 0;
-        else if (GPIO_pin == GPIO_PIN_1)
-            channel = 1;
-        else if (GPIO_pin == GPIO_PIN_2)
-            channel = 2;
-        else if (GPIO_pin == GPIO_PIN_3)
-            channel = 3;
-        else if (GPIO_pin == GPIO_PIN_4)
-            channel = 4;
-        else if (GPIO_pin == GPIO_PIN_5)
-            channel = 5;
-        else if (GPIO_pin == GPIO_PIN_6)
-            channel = 6;
-        else if (GPIO_pin == GPIO_PIN_7)
-            channel = 7;
+        switch(GPIO_pin)
+        {
+            case GPIO_PIN_0: channel = 0; break;    // GPIO_1   // ADC1
+            case GPIO_PIN_1: channel = 1; break;    // GPIO_2   // ADC1
+            case GPIO_PIN_2: channel = 2; break;    // GPIO_3   // ADC1
+            case GPIO_PIN_3: channel = 3; break;    // GPIO_4   // ADC1
+            case GPIO_PIN_4: channel = 4; break;    // m1_temp  // ADC1
+            case GPIO_PIN_5: channel = 5; break;    // aux_temp // ADC1
+            case GPIO_PIN_6: channel = 6; break;    // V_bus_s  // ADC1
+            case GPIO_PIN_7: channel = 7; break;    // m1_AL    // ADC1
+        }
     } else if (GPIO_port == GPIOB) {
-        if (GPIO_pin == GPIO_PIN_0)
-            channel = 8;
-        else if (GPIO_pin == GPIO_PIN_1)
-            channel = 9;
+        switch(GPIO_pin)
+        {
+            case GPIO_PIN_0: channel = 8; break;    // m1_BL    // ADC1
+            case GPIO_PIN_1: channel = 9; break;    // m1_CL    // ADC1
+        }
     } else if (GPIO_port == GPIOC) {
-        if (GPIO_pin == GPIO_PIN_0)
-            channel = 10;
-        else if (GPIO_pin == GPIO_PIN_1)
-            channel = 11;
-        else if (GPIO_pin == GPIO_PIN_2)
-            channel = 12;
-        else if (GPIO_pin == GPIO_PIN_3)
-            channel = 13;
-        else if (GPIO_pin == GPIO_PIN_4)
-            channel = 14;
-        else if (GPIO_pin == GPIO_PIN_5)
-            channel = 15;
+        switch(GPIO_pin)
+        {
+            case GPIO_PIN_0: channel = 10; break;   // m0_IB    // ADC1 // ADC2 injected    //
+            case GPIO_PIN_1: channel = 11; break;   // m0_IC    // ADC1 //                  // ADC3 injected
+            case GPIO_PIN_2: channel = 12; break;   // m1_IC    // ADC1 //                  // ADC3
+            case GPIO_PIN_3: channel = 13; break;   // m1_IB    // ADC1 // ADC2             //
+            case GPIO_PIN_4: channel = 14; break;   // GPIO_5   // ADC1 //                  //
+            case GPIO_PIN_5: channel = 15; break;   // m0_temp  // ADC1 //                  //
+        }
     }
-    if (channel < ADC_CHANNEL_COUNT)
-        return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
-    else
-        return 0.0f / 0.0f; // NaN
+
+    return (channel < ADC_CHANNEL_COUNT) ? 
+    ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale) :
+    (0.0f / 0.0f); // NaN
 }
 
 //--------------------------------
@@ -473,24 +467,21 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Motor 1 is on Timer 8, which triggers ADC 2 and 3 on a regular conversion
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    Axis& axis = injected ? *axes[0] : *axes[1];
     int axis_num = injected ? 0 : 1;
-    Axis& other_axis = injected ? *axes[1] : *axes[0];
+    Axis& axis          = *axes[(injected) ? 0 : 1];
+    Axis& other_axis    = *axes[(injected) ? 1 : 0];
+        
     bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
     bool current_meas_not_DC_CAL = !counting_down;
 
     // Check the timing of the sequencing
-    if (current_meas_not_DC_CAL)
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_I);
-    else
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
+    axis.motor_.log_timing((current_meas_not_DC_CAL) ? 
+                            Motor::TIMING_LOG_ADC_CB_I : Motor::TIMING_LOG_ADC_CB_DC);
 
     bool update_timings = false;
     if (hadc == &hadc2) {
-        if (&axis == axes[1] && counting_down)
-            update_timings = true; // update timings of M0
-        else if (&axis == axes[0] && !counting_down)
-            update_timings = true; // update timings of M1
+        if ((&axis == axes[1] && counting_down) || (&axis == axes[0] && !counting_down))
+            update_timings = true; // update timings of M0, update timings of M1
     }
 
     // Load next timings for the motor that we're not currently sampling
@@ -498,8 +489,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         if (!other_axis.motor_.next_timings_valid_) {
             // the motor control loop failed to update the timings in time
             // we must assume that it died and therefore float all phases
-            bool was_armed = safety_critical_disarm_motor_pwm(other_axis.motor_);
-            if (was_armed) {
+            if (safety_critical_disarm_motor_pwm(other_axis.motor_)) {
                 other_axis.motor_.error_ |= Motor::ERROR_CONTROL_DEADLINE_MISSED;
             }
         } else {
@@ -511,13 +501,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         update_brake_current();
     }
 
-    uint32_t ADCValue;
-    if (injected) {
-        ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-    } else {
-        ADCValue = HAL_ADC_GetValue(hadc);
-    }
-    float current = axis.motor_.phase_current_from_adcval(ADCValue);
+    float current = axis.motor_.phase_current_from_adcval((injected) ? 
+            HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1) : HAL_ADC_GetValue(hadc));
 
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
@@ -610,13 +595,10 @@ void update_brake_current() {
 // TIM2 or TIM5 input capture channel number.
 int tim_2_5_channel_num_to_gpio_num(int channel) {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (channel >= 1 && channel <= 4) {
-        // the channel numbers just happen to coincide with
-        // the GPIO numbers
-        return channel;
-    } else {
-        return -1;
-    }
+
+    // the channel numbers just happen to coincide with the GPIO numbers
+    return (channel >= 1 && channel <= 4) ? channel : -1;
+
 #else
     // Only ch4 is available on v3.2
     if (channel == 4) {
@@ -728,15 +710,15 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
 
 static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
 {
-    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
+    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / adc_ref_voltage;
     float value = map->min + (fraction * (map->max - map->min));
     get_endpoint(map->endpoint)->set_from_float(value);
 }
 
 static void analog_polling_thread(void *)
 {
-    while (true) {
-        for (int i = 0; i < GPIO_COUNT; i++) {
+    for(;;){
+        for (int i = 0; i < GPIO_COUNT; ++i) {
             struct PWMMapping_t *map = &board_config.analog_mappings[i];
 
             if (is_endpoint_ref_valid(map->endpoint))
