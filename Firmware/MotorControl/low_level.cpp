@@ -478,25 +478,24 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     axis.motor_.log_timing((current_meas_not_DC_CAL) ? 
                             Motor::TIMING_LOG_ADC_CB_I : Motor::TIMING_LOG_ADC_CB_DC);
 
-    bool update_timings = false;
+    // bool update_timings = false;
     if (hadc == &hadc2) {
-        if ((&axis == axes[1] && counting_down) || (&axis == axes[0] && !counting_down))
-            update_timings = true; // update timings of M0, update timings of M1
-    }
-
-    // Load next timings for the motor that we're not currently sampling
-    if (update_timings) {
-        if (!other_axis.motor_.next_timings_valid_) {
+        if ( ((&axis == axes[1]) && counting_down) ||
+             ((&axis == axes[0]) && !counting_down) ) {
+            // update_timings = true; // update timings of M0, update timings of M1
+                // Load next timings for the motor that we're not currently sampling
+            if (!other_axis.motor_.next_timings_valid_) {
             // the motor control loop failed to update the timings in time
             // we must assume that it died and therefore float all phases
-            if (safety_critical_disarm_motor_pwm(other_axis.motor_)) {
-                other_axis.motor_.error_ |= Motor::ERROR_CONTROL_DEADLINE_MISSED;
-            }
-        } else {
-            other_axis.motor_.next_timings_valid_ = false;
-            safety_critical_apply_motor_pwm_timings(
-                other_axis.motor_, other_axis.motor_.next_timings_
+                if (safety_critical_disarm_motor_pwm(other_axis.motor_)) {
+                    other_axis.motor_.error_ |= Motor::ERROR_CONTROL_DEADLINE_MISSED;
+                }
+            } else {
+                other_axis.motor_.next_timings_valid_ = false;
+                safety_critical_apply_motor_pwm_timings(
+                    other_axis.motor_, other_axis.motor_.next_timings_
             );
+            }
         }
         update_brake_current();
     }
@@ -537,8 +536,7 @@ void tim_update_cb(TIM_HandleTypeDef* htim) {
     
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    bool counting_down = htim->Instance->CR1 & TIM_CR1_DIR;
-    if (counting_down)
+    if (htim->Instance->CR1 & TIM_CR1_DIR)
         return;
     
     int sample_ch;
