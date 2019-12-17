@@ -347,7 +347,7 @@ void start_general_purpose_adc() {
     // Set up sampling sequence (channel 0 ... channel 15)
     sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
     for (uint32_t channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
-        sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
+        sConfig.Channel = channel;
         sConfig.Rank = channel + 1; // rank numbering starts at 1
         if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
             _Error_Handler((char*)__FILE__, __LINE__);
