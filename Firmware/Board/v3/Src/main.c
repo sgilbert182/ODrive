@@ -86,6 +86,40 @@ void MX_FREERTOS_Init(void);
 uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
 
+/*---------------------------------------------------------------------------*/
+
+/* External Idle and Timer task static memory allocation functions */
+extern void vApplicationGetIdleTaskMemory  (StaticTask_t **ppxIdleTaskTCBBuffer,  StackType_t **ppxIdleTaskStackBuffer,  uint32_t *pulIdleTaskStackSize);
+extern void vApplicationGetTimerTaskMemory (StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize);
+
+/* Idle task control block and stack */
+static StaticTask_t Idle_TCB;
+static StackType_t  Idle_Stack[configMINIMAL_STACK_SIZE];
+
+/* Timer task control block and stack */
+static StaticTask_t Timer_TCB;
+static StackType_t  Timer_Stack[configTIMER_TASK_STACK_DEPTH];
+
+/*
+  vApplicationGetIdleTaskMemory gets called when configSUPPORT_STATIC_ALLOCATION
+  equals to 1 and is required for static memory allocation support.
+*/
+void vApplicationGetIdleTaskMemory (StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) {
+  *ppxIdleTaskTCBBuffer   = &Idle_TCB;
+  *ppxIdleTaskStackBuffer = &Idle_Stack[0];
+  *pulIdleTaskStackSize   = (uint32_t)configMINIMAL_STACK_SIZE;
+}
+
+/*
+  vApplicationGetTimerTaskMemory gets called when configSUPPORT_STATIC_ALLOCATION
+  equals to 1 and is required for static memory allocation support.
+*/
+void vApplicationGetTimerTaskMemory (StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize) {
+  *ppxTimerTaskTCBBuffer   = &Timer_TCB;
+  *ppxTimerTaskStackBuffer = &Timer_Stack[0];
+  *pulTimerTaskStackSize   = (uint32_t)configTIMER_TASK_STACK_DEPTH;
+}
+
 // Gets called from the startup assembly code
 void early_start_checks(void) {
   if(_reboot_cookie == 0xDEADFE75) {
