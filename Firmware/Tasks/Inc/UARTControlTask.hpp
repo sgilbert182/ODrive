@@ -1,7 +1,7 @@
 /*******************************************************************************
 * File          : UARTControlTask.hpp
 *
-* Description   :  UART receive and transmit handling task
+* Description   : UART receive and transmit handling task
 *
 * Project       :
 *
