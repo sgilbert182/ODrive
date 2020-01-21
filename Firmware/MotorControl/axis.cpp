@@ -1,3 +1,20 @@
+/*******************************************************************************
+* File          : axis.cpp
+*
+* Description   :
+*
+* Project       :
+*
+* Author        :
+*
+* Created on    :
+*
+*
+*******************************************************************************/
+
+/*******************************************************************************
+INCLUDES
+*******************************************************************************/
 
 #include <stdlib.h>
 #include <functional>
@@ -6,6 +23,38 @@
 #include "odrive_main.h"
 #include "utils.h"
 #include "communication/interface_can.hpp"
+
+/*******************************************************************************
+NAMESPACE
+*******************************************************************************/
+
+/*******************************************************************************
+DEFINITIONS
+*******************************************************************************/
+
+/*******************************************************************************
+TYPES
+*******************************************************************************/
+
+/*******************************************************************************
+GLOBAL VARIABLES
+*******************************************************************************/
+
+/*******************************************************************************
+MODULE VARIABLES
+*******************************************************************************/
+
+/*******************************************************************************
+NAMESPACE
+*******************************************************************************/
+
+/*******************************************************************************
+INTERNAL FUNCTION DEFINTIONS
+*******************************************************************************/
+
+/*******************************************************************************
+FUNCTION DECLARATIONS
+*******************************************************************************/
 
 Axis::Axis(int axis_num,
            const AxisHardwareConfig_t& hw_config,
@@ -17,53 +66,57 @@ Axis::Axis(int axis_num,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
            Endstop& max_endstop)
-    : axis_num_(axis_num),
-      hw_config_(hw_config),
-      config_(config),
-      encoder_(encoder),
-      sensorless_estimator_(sensorless_estimator),
-      controller_(controller),
-      motor_(motor),
-      trap_(trap),
-      min_endstop_(min_endstop),
-      max_endstop_(max_endstop)
+    : CSoftwareWatchdog(config.watchdog_timeout)
+    , axis_num_(axis_num)
+    , hw_config_(hw_config)
+    , config_(config)
+    , encoder_(encoder)
+    , sensorless_estimator_(sensorless_estimator)
+    , controller_(controller)
+    , motor_(motor)
+    , trap_(trap)
+    , min_endstop_(min_endstop)
+    , max_endstop_(max_endstop)
+    , m_taskChainCBBuffer(m_taskChain, ARRAY_LEN(m_taskChain))
 {
-    encoder_.axis_ = this;
+    encoder_.axis_              = this;
     sensorless_estimator_.axis_ = this;
-    controller_.axis_ = this;
-    motor_.axis_ = this;
-    trap_.axis_ = this;
-    min_endstop_.axis_ = this;
-    max_endstop_.axis_ = this;
-    decode_step_dir_pins();
+    controller_.axis_           = this;
+    motor_.axis_                = this;
+    trap_.axis_                 = this;
+    min_endstop_.axis_          = this;
+    max_endstop_.axis_          = this;
+    stepDirectionControl.step_gpio_pin = config.SDPins.step_gpio_pin;
+    stepDirectionControl.dir_gpio_pin = config.SDPins.dir_gpio_pin;
+    stepDirectionControl.decode_step_dir_pins();
     watchdog_feed();
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
     Axis::LockinConfig_t config;
-    config.current = 10.0f;           // [A]
-    config.ramp_time = 0.4f;          // [s]
-    config.ramp_distance = 1 * M_PI;  // [rad]
-    config.accel = 20.0f;     // [rad/s^2]
-    config.vel = 40.0f; // [rad/s]
-    config.finish_distance = 100.0f * 2.0f * M_PI;  // [rad]
-    config.finish_on_vel = false;
-    config.finish_on_distance = true;
-    config.finish_on_enc_idx = true;
+    config.current              = 10.0f;                                        // [A]
+    config.ramp_time            = 0.4f;                                         // [s]
+    config.ramp_distance        = 1 * M_PI;                                     // [rad]
+    config.accel                = 20.0f;                                        // [rad/s^2]
+    config.vel                  = 40.0f;                                        // [rad/s]
+    config.finish_distance      = 100.0f * 2.0f * M_PI;                         // [rad]
+    config.finish_on_vel        = false;
+    config.finish_on_distance   = true;
+    config.finish_on_enc_idx    = true;
     return config;
 }
 
 Axis::LockinConfig_t Axis::default_sensorless() {
     Axis::LockinConfig_t config;
-    config.current = 10.0f;           // [A]
-    config.ramp_time = 0.4f;          // [s]
-    config.ramp_distance = 1 * M_PI;  // [rad]
-    config.accel = 200.0f;     // [rad/s^2]
-    config.vel = 400.0f; // [rad/s]
-    config.finish_distance = 100.0f;  // [rad]
-    config.finish_on_vel = true;
-    config.finish_on_distance = false;
-    config.finish_on_enc_idx = false;
+    config.current              = 10.0f;                                        // [A]
+    config.ramp_time            = 0.4f;                                         // [s]
+    config.ramp_distance        = 1 * M_PI;                                     // [rad]
+    config.accel                = 200.0f;                                       // [rad/s^2]
+    config.vel                  = 400.0f;                                       // [rad/s]
+    config.finish_distance      = 100.0f;                                       // [rad]
+    config.finish_on_vel        = true;
+    config.finish_on_distance   = false;
+    config.finish_on_enc_idx    = false;
     return config;
 }
 
@@ -106,9 +159,9 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    if (step_dir_active_) {
-        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
-        float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+    if (stepDirectionControl.getActive()) {
+
+        float dir = (stepDirectionControl.getDirection() == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.input_pos_ += dir * config_.counts_per_step;
         controller_.input_pos_updated();
     }
@@ -116,49 +169,49 @@ void Axis::step_cb() {
 
 void Axis::load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config) {
-    config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
+    config->SDPins.step_gpio_pin = hw_config.step_gpio_pin;
+    config->SDPins.dir_gpio_pin = hw_config.dir_gpio_pin;
 }
 
 void Axis::load_default_can_id(const int& id, Config_t& config){
     config.can_node_id = id;
 }
 
-void Axis::decode_step_dir_pins() {
-    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
-}
+//void Axis::decode_step_dir_pins() {
+//    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
+//    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
+//    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
+//    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
+//}
 
 // @brief (de)activates step/dir input
-void Axis::set_step_dir_active(bool active) {
-    if (active) {
-        // Set up the direction GPIO as input
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = dir_pin_;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
-
-        // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
-
-        step_dir_active_ = true;
-    } else {
-        step_dir_active_ = false;
-
-        // Unsubscribe from step GPIO
-        GPIO_unsubscribe(step_port_, step_pin_);
-    }
-}
+//void Axis::set_step_dir_active(bool active) {
+//    if (active) {
+//        // Set up the direction GPIO as input
+//        GPIO_InitTypeDef GPIO_InitStruct;
+//        GPIO_InitStruct.Pin = dir_pin_;
+//        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//        GPIO_InitStruct.Pull = GPIO_NOPULL;
+//        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
+//
+//        // Subscribe to rising edges of the step GPIO
+//        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
+//
+//        step_dir_active_ = true;
+//    } else {
+//        step_dir_active_ = false;
+//
+//        // Unsubscribe from step GPIO
+//        GPIO_unsubscribe(step_port_, step_pin_);
+//    }
+//}
 
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {
     if (!brake_resistor_armed)
         error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
-    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
+    if ((m_currentState != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
     if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
@@ -188,7 +241,7 @@ bool Axis::do_checks() {
     // controller_.do_checks();
 
     // Check for endstop presses
-    bool vel_dependent_stopping = (current_state_ == AXIS_STATE_HOMING) && (controller_.config_.control_mode >= Controller::CTRL_MODE_VELOCITY_CONTROL);
+    bool vel_dependent_stopping = (m_currentState == AXIS_STATE_HOMING) && (controller_.config_.control_mode >= Controller::CTRL_MODE_VELOCITY_CONTROL);
     if (min_endstop_.config_.enabled && min_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ < 0.0f)) {
         error_ |= ERROR_MIN_ENDSTOP_PRESSED;
     } else if (max_endstop_.config_.enabled && max_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ > 0.0f)) {
@@ -198,9 +251,9 @@ bool Axis::do_checks() {
     return check_for_errors();
 }
 
-// @brief Update all esitmators
+// @brief Update all estimators
 bool Axis::do_updates() {
-    // Sub-components should use set_error which will propegate to this error_
+    // Sub-components should use set_error which will propagate to this error_
     encoder_.update();
     sensorless_estimator_.update();
     min_endstop_.update();
@@ -210,25 +263,13 @@ bool Axis::do_updates() {
     return ret;
 }
 
-// @brief Feed the watchdog to prevent watchdog timeouts.
-void Axis::watchdog_feed() {
-    watchdog_current_value_ = get_watchdog_reset();
-}
+void Axis::clear_errors() {
+    motor_.error_                = Motor::ERROR_NONE;
+    controller_.error_           = Controller::ERROR_NONE;
+    sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
+    encoder_.error_              = Encoder::ERROR_NONE;
 
-// @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
-bool Axis::watchdog_check() {
-    // reset value = 0 means watchdog disabled.
-    if (!config_.enable_watchdog) return true;
-    if (get_watchdog_reset() == 0) return true;
-
-    // explicit check here to ensure that we don't underflow back to UINT32_MAX
-    if (watchdog_current_value_ > 0) {
-        watchdog_current_value_--;
-        return true;
-    } else {
-        error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
-        return false;
-    }
+    error_ = Axis::ERROR_NONE;
 }
 
 bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
@@ -324,7 +365,7 @@ bool Axis::run_closed_loop_control_loop() {
     // Avoid integrator windup issues
     controller_.vel_integrator_current_ = 0.0f;
 
-    set_step_dir_active(config_.enable_step_dir);
+    stepDirectionControl.setStepDirectionActive(config_.enable_step_dir, step_cb_wrapper);
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
@@ -337,7 +378,7 @@ bool Axis::run_closed_loop_control_loop() {
 
         return true;
     });
-    set_step_dir_active(false);
+    stepDirectionControl.setStepDirectionActive(false);
     return check_for_errors();
 }
 
