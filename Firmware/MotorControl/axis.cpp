@@ -474,6 +474,105 @@ bool Axis::run_idle_loop() {
     return check_for_errors();
 }
 
+bool Axis::run_state(void)
+{
+    bool status;
+    switch (m_currentState) {
+        case AXIS_STATE_MOTOR_CALIBRATION:
+            status = motor_.run_calibration();
+            break;
+
+        case AXIS_STATE_ENCODER_INDEX_SEARCH:
+            if (!motor_.is_calibrated_)                                                         goto invalid_state_label;
+            if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)      goto invalid_state_label;
+            status = encoder_.run_index_search();
+            break;
+
+        case AXIS_STATE_ENCODER_DIR_FIND:
+            if (!motor_.is_calibrated_)                                                         goto invalid_state_label;
+            status = encoder_.run_direction_find();
+            break;
+
+        case AXIS_STATE_HOMING:
+            status = run_homing();
+            break;
+
+        case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+            if (!motor_.is_calibrated_)                                                         goto invalid_state_label;
+            status = encoder_.run_offset_calibration();
+            break;
+
+        case AXIS_STATE_LOCKIN_SPIN:
+            if (!motor_.is_calibrated_ || motor_.config_.direction==0)                          goto invalid_state_label;
+            status = run_lockin_spin(config_.lockin);
+            break;
+
+        case AXIS_STATE_SENSORLESS_CONTROL:
+            if (!motor_.is_calibrated_ || motor_.config_.direction==0)                          goto invalid_state_label;
+            status = run_lockin_spin(config_.sensorless_ramp); // TODO: restart if desired
+            if (status) {
+                // call to controller.reset() that happend when arming means that vel_setpoint
+                // is zeroed. So we make the setpoint the spinup target for smooth transition.
+                controller_.vel_setpoint_ = config_.sensorless_ramp.vel;
+                status = run_sensorless_control_loop();
+            }
+            break;
+
+        case AXIS_STATE_CLOSED_LOOP_CONTROL:
+            if (!motor_.is_calibrated_ || motor_.config_.direction==0)                          goto invalid_state_label;
+            if (!encoder_.is_ready_)                                                            goto invalid_state_label;
+            status = run_closed_loop_control_loop();
+            break;
+
+        case AXIS_STATE_IDLE:
+            run_idle_loop();
+            status = motor_.arm(); // done with idling - try to arm the motor
+            break;
+
+        default:
+        invalid_state_label:
+            error_ |= ERROR_INVALID_STATE;
+            status = false;  // this will set the state to idle
+            break;
+    }
+
+    return status;
+}
+
+void Axis::request_state(State_t requestedState)
+{
+    if (requestedState != AXIS_STATE_UNDEFINED) {
+        if (requestedState == AXIS_STATE_STARTUP_SEQUENCE) {
+            if (config_.startup_motor_calibration)
+                m_taskChainCBBuffer.write(AXIS_STATE_MOTOR_CALIBRATION);
+            if (config_.startup_encoder_index_search && encoder_.config_.use_index)
+                m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
+            if (config_.startup_encoder_offset_calibration)
+                m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+            if (config_.startup_homing)
+                m_taskChainCBBuffer.write(AXIS_STATE_HOMING);
+            if (config_.startup_closed_loop_control)
+                m_taskChainCBBuffer.write(AXIS_STATE_CLOSED_LOOP_CONTROL);
+            else if (config_.startup_sensorless_control)
+                m_taskChainCBBuffer.write(AXIS_STATE_SENSORLESS_CONTROL);
+            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
+        } else if (requestedState == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
+            m_taskChainCBBuffer.write(AXIS_STATE_MOTOR_CALIBRATION);
+            if (encoder_.config_.use_index)
+                m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
+            m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
+        } else if (requestedState != AXIS_STATE_UNDEFINED) {
+            m_taskChainCBBuffer.write(requestedState);
+            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
+        }
+        m_taskChainCBBuffer.write(AXIS_STATE_UNDEFINED);  // TODO: bounds checking
+        requestedState = AXIS_STATE_UNDEFINED;
+        // Auto-clear any invalid state error
+        error_ &= ~ERROR_INVALID_STATE;
+    }
+}
+
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
@@ -481,117 +580,18 @@ void Axis::run_state_machine_loop() {
     motor_.arm();
 
     for (;;) {
-        // Load the task chain if a specific request is pending
-        if (requested_state_ != AXIS_STATE_UNDEFINED) {
-            size_t pos = 0;
-            if (requested_state_ == AXIS_STATE_STARTUP_SEQUENCE) {
-                if (config_.startup_motor_calibration)
-                    task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                if (config_.startup_encoder_index_search && encoder_.config_.use_index)
-                    task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
-                if (config_.startup_encoder_offset_calibration)
-                    task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
-                if (config_.startup_homing)
-                    task_chain_[pos++] = AXIS_STATE_HOMING;
-                if (config_.startup_closed_loop_control)
-                    task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
-                else if (config_.startup_sensorless_control)
-                    task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
-                task_chain_[pos++] = AXIS_STATE_IDLE;
-            } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
-                task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                if (encoder_.config_.use_index)
-                    task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
-                task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
-                task_chain_[pos++] = AXIS_STATE_IDLE;
-            } else if (requested_state_ != AXIS_STATE_UNDEFINED) {
-                task_chain_[pos++] = requested_state_;
-                task_chain_[pos++] = AXIS_STATE_IDLE;
-            }
-            task_chain_[pos++] = AXIS_STATE_UNDEFINED;  // TODO: bounds checking
-            requested_state_ = AXIS_STATE_UNDEFINED;
-            // Auto-clear any invalid state error
-            error_ &= ~ERROR_INVALID_STATE;
-        }
-
-        // Note that current_state is a reference to task_chain_[0]
+            // Load the task chain if a specific request is pending
+        request_state(requested_state_);
 
         // Run the specified state
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
-        bool status;
-        switch (current_state_) {
-            case AXIS_STATE_MOTOR_CALIBRATION: {
-                status = motor_.run_calibration();
-            } break;
-
-            case AXIS_STATE_ENCODER_INDEX_SEARCH: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
-                if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)
-                    goto invalid_state_label;
-
-                status = encoder_.run_index_search();
-            } break;
-
-            case AXIS_STATE_ENCODER_DIR_FIND: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
-
-                status = encoder_.run_direction_find();
-            } break;
-
-            case AXIS_STATE_HOMING: {
-                status = run_homing();
-            } break;
-
-            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
-                status = encoder_.run_offset_calibration();
-            } break;
-
-            case AXIS_STATE_LOCKIN_SPIN: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
-                    goto invalid_state_label;
-                status = run_lockin_spin(config_.lockin);
-            } break;
-
-            case AXIS_STATE_SENSORLESS_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
-                        goto invalid_state_label;
-                status = run_lockin_spin(config_.sensorless_ramp); // TODO: restart if desired
-                if (status) {
-                    // call to controller.reset() that happend when arming means that vel_setpoint
-                    // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel;
-                    status = run_sensorless_control_loop();
-                }
-            } break;
-
-            case AXIS_STATE_CLOSED_LOOP_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
-                    goto invalid_state_label;
-                if (!encoder_.is_ready_)
-                    goto invalid_state_label;
-                status = run_closed_loop_control_loop();
-            } break;
-
-            case AXIS_STATE_IDLE: {
-                run_idle_loop();
-                status = motor_.arm(); // done with idling - try to arm the motor
-            } break;
-
-            default:
-            invalid_state_label:
-                error_ |= ERROR_INVALID_STATE;
-                status = false;  // this will set the state to idle
-                break;
-        }
-
         // If the state failed, go to idle, else advance task chain
-        if (!status)
-            current_state_ = AXIS_STATE_IDLE;
-        else
-            memmove(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
+        if (!run_state())
+            m_taskChainCBBuffer.flushBuffer();
+
+        if(0 == m_taskChainCBBuffer.read(&m_currentState, 1))
+        {
+            m_currentState = AXIS_STATE_IDLE;
+        }
     }
 }
