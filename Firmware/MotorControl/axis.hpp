@@ -46,7 +46,6 @@ NAMESPACE
 *******************************************************************************/
 
 class Axis
-        : public CSoftwareWatchdog
 {
 public:
     enum Error_t {
@@ -174,7 +173,7 @@ public:
 
     void watchdog_feed()
     {
-        CSoftwareWatchdog::watchdog_feed();
+        m_watchdog.watchdog_feed();
     }
 
     void clear_errors();
@@ -231,6 +230,7 @@ public:
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
     Homing_t homing_;
     uint32_t last_heartbeat_ = 0;
+    CSoftwareWatchdog m_watchdog;
 };
 
 
@@ -259,8 +259,8 @@ inline auto Axis::make_protocol_definitions() {
             make_protocol_property("startup_homing", &config_.startup_homing),
             make_protocol_property("enable_step_dir", &config_.enable_step_dir),
             make_protocol_property("counts_per_step", &config_.counts_per_step),
-            make_protocol_property("watchdog_timeout", &m_watchdogTimeout),
-            make_protocol_property("enable_watchdog", &m_enabled),
+            make_protocol_property("watchdog_timeout", &m_watchdog.m_watchdogTimeout),
+            make_protocol_property("enable_watchdog", &m_watchdog.m_enabled),
             make_protocol_property("step_gpio_pin", &stepDirectionControl.step_gpio_pin,
                                 [](void* ctx) { static_cast<Axis*>(ctx)->stepDirectionControl.decode_step_dir_pins(); }, this),
             make_protocol_property("dir_gpio_pin", &stepDirectionControl.dir_gpio_pin,
@@ -339,7 +339,7 @@ void Axis::run_control_loop(const T& update_handler) {
         bool updates_ok = do_updates();
 
         // make sure the watchdog is being fed.
-        bool watchdog_ok = watchdog_check();
+        bool watchdog_ok = m_watchdog.watchdog_check();
 
         if(!watchdog_ok)
             error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;

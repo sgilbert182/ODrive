@@ -66,8 +66,7 @@ Axis::Axis(int axis_num,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
            Endstop& max_endstop)
-    : CSoftwareWatchdog(config.watchdog_timeout)
-    , axis_num_(axis_num)
+    : axis_num_(axis_num)
     , hw_config_(hw_config)
     , config_(config)
     , encoder_(encoder)
@@ -78,6 +77,7 @@ Axis::Axis(int axis_num,
     , min_endstop_(min_endstop)
     , max_endstop_(max_endstop)
     , m_taskChainCBBuffer(m_taskChain, ARRAY_LEN(m_taskChain))
+    , m_watchdog(config.watchdog_timeout)
 {
     encoder_.axis_              = this;
     sensorless_estimator_.axis_ = this;
@@ -89,7 +89,7 @@ Axis::Axis(int axis_num,
     stepDirectionControl.step_gpio_pin = config.SDPins.step_gpio_pin;
     stepDirectionControl.dir_gpio_pin = config.SDPins.dir_gpio_pin;
     stepDirectionControl.decode_step_dir_pins();
-    watchdog_feed();
+    m_watchdog.watchdog_feed();
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
