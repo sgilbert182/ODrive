@@ -160,10 +160,8 @@ bool Axis::wait_for_current_meas() {
 // step/direction interface
 void Axis::step_cb() {
     if (stepDirectionControl.getActive()) {
-
-        float dir = (stepDirectionControl.getDirection() == GPIO_PIN_SET) ? 1.0f : -1.0f;
-        controller_.input_pos_ += dir * config_.counts_per_step;
-        controller_.input_pos_updated();
+        controller_.move_incremental((stepDirectionControl.getDirection() == GPIO_PIN_SET)
+                                     ? config_.counts_per_step : -config_.counts_per_step, true);
     }
 };
 
@@ -229,9 +227,8 @@ bool Axis::do_updates() {
     sensorless_estimator_.update();
     min_endstop_.update();
     max_endstop_.update();
-    bool ret = check_for_errors();
     odCAN->send_heartbeat(this);
-    return ret;
+    return check_for_errors();
 }
 
 void Axis::clear_errors() {
@@ -513,30 +510,35 @@ bool Axis::run_state(void)
 void Axis::request_state(State_t & requestedState)
 {
     if (requestedState != AXIS_STATE_UNDEFINED) {
-        if (requestedState == AXIS_STATE_STARTUP_SEQUENCE) {
-            if (config_.startup_motor_calibration)
+        switch (requestedState)
+        {
+            case AXIS_STATE_STARTUP_SEQUENCE:
+                if (config_.startup_motor_calibration)
+                    m_taskChainCBBuffer.write(AXIS_STATE_MOTOR_CALIBRATION);
+                if (config_.startup_encoder_index_search && encoder_.config_.use_index)
+                    m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
+                if (config_.startup_encoder_offset_calibration)
+                    m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+                if (config_.startup_homing)
+                    m_taskChainCBBuffer.write(AXIS_STATE_HOMING);
+                if (config_.startup_closed_loop_control)
+                    m_taskChainCBBuffer.write(AXIS_STATE_CLOSED_LOOP_CONTROL);
+                else if (config_.startup_sensorless_control)
+                    m_taskChainCBBuffer.write(AXIS_STATE_SENSORLESS_CONTROL);
+                break;
+
+            case AXIS_STATE_FULL_CALIBRATION_SEQUENCE:
                 m_taskChainCBBuffer.write(AXIS_STATE_MOTOR_CALIBRATION);
-            if (config_.startup_encoder_index_search && encoder_.config_.use_index)
-                m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
-            if (config_.startup_encoder_offset_calibration)
+                if (encoder_.config_.use_index)
+                    m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
                 m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
-            if (config_.startup_homing)
-                m_taskChainCBBuffer.write(AXIS_STATE_HOMING);
-            if (config_.startup_closed_loop_control)
-                m_taskChainCBBuffer.write(AXIS_STATE_CLOSED_LOOP_CONTROL);
-            else if (config_.startup_sensorless_control)
-                m_taskChainCBBuffer.write(AXIS_STATE_SENSORLESS_CONTROL);
-            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
-        } else if (requestedState == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
-            m_taskChainCBBuffer.write(AXIS_STATE_MOTOR_CALIBRATION);
-            if (encoder_.config_.use_index)
-                m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_INDEX_SEARCH);
-            m_taskChainCBBuffer.write(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
-            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
-        } else if (requestedState != AXIS_STATE_UNDEFINED) {
-            m_taskChainCBBuffer.write(requestedState);
-            m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
+                break;
+
+            default:
+                m_taskChainCBBuffer.write(requestedState);
+                break;
         }
+        m_taskChainCBBuffer.write(AXIS_STATE_IDLE);
         m_taskChainCBBuffer.write(AXIS_STATE_UNDEFINED);  // TODO: bounds checking
         requestedState = AXIS_STATE_UNDEFINED;
         // Auto-clear any invalid state error
