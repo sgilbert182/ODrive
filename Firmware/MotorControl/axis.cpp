@@ -177,35 +177,6 @@ void Axis::load_default_can_id(const int& id, Config_t& config){
     config.can_node_id = id;
 }
 
-//void Axis::decode_step_dir_pins() {
-//    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-//    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-//    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-//    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
-//}
-
-// @brief (de)activates step/dir input
-//void Axis::set_step_dir_active(bool active) {
-//    if (active) {
-//        // Set up the direction GPIO as input
-//        GPIO_InitTypeDef GPIO_InitStruct;
-//        GPIO_InitStruct.Pin = dir_pin_;
-//        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-//        GPIO_InitStruct.Pull = GPIO_NOPULL;
-//        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
-//
-//        // Subscribe to rising edges of the step GPIO
-//        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
-//
-//        step_dir_active_ = true;
-//    } else {
-//        step_dir_active_ = false;
-//
-//        // Unsubscribe from step GPIO
-//        GPIO_unsubscribe(step_port_, step_pin_);
-//    }
-//}
-
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {
