@@ -1,3 +1,20 @@
+/*******************************************************************************
+* File          : interface_uart.cpp
+*
+* Description   :
+*
+* Project       :
+*
+* Author        :
+*
+* Created on    :
+*
+*******************************************************************************/
+
+/******************************************************************************
+INCLUDES
+*******************************************************************************/
+
 #include "interface_uart.h"
 #include "ascii_protocol.hpp"
 #include "CircularBuffer.hpp"
@@ -8,15 +25,42 @@
 #include <freertos_vars.h>
 #include "UARTControlTask.hpp"
 
+
+/*******************************************************************************
+NAMESPACE
+*******************************************************************************/
+
+/*******************************************************************************
+DEFINITIONS
+*******************************************************************************/
+
 #define UART_TX_BUFFER_SIZE 64
 #define UART_RX_BUFFER_SIZE 64
 
+/*******************************************************************************
+TYPES
+*******************************************************************************/
+
+/*******************************************************************************
+GLOBAL VARIABLES
+*******************************************************************************/
+
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 // static thread_local uint32_t deadline_ms = 0;
-
 osThreadId uart_thread;
 const uint32_t stack_size_uart_thread = 2048;  // Bytes
 
+/*******************************************************************************
+MODULE VARIABLES
+*******************************************************************************/
+
+/*******************************************************************************
+INTERNAL FUNCTION DEFINTIONS
+*******************************************************************************/
+
+/*******************************************************************************
+FUNCTION DECLARATIONS
+*******************************************************************************/
 
 class UARTSender
     : public StreamSink
@@ -26,33 +70,28 @@ public:
         : m_pHuart(pHuart)
         , TXCircularBuffer(TXBuffer, ARRAY_LEN(TXBuffer))
     {}
+    virtual ~UARTSender() = default;
     int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes)
     {
-        // Loop to ensure all bytes get sent
-        while (length)
+        for(auto written = 0u; written < length; written += TXCircularBuffer.write(buffer, length))
         {
-            size_t chunk = (length < UART_TX_BUFFER_SIZE) ? length : UART_TX_BUFFER_SIZE;
-            // wait for USB interface to become ready
-            // TODO: implement ring buffer to get a more continuous stream of data
-            // if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
-            if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
+            if(nullptr != processed_bytes)
             {
-                return -1;
+                    *processed_bytes = written;
             }
-            else
+            // Loop to ensure all bytes get sent
+            while (!TXCircularBuffer.isEmpty())
             {
-                // transmit chunk
-                if (HAL_UART_Transmit_DMA(m_pHuart, (uint8_t *)memcpy(tx_buf_, buffer, chunk), chunk) != HAL_OK)
+                if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
                 {
                     return -1;
                 }
                 else
                 {
-                    buffer += chunk;
-                    length -= chunk;
-                    if (processed_bytes)
+                    // transmit chunk
+                    if (HAL_UART_Transmit_DMA(m_pHuart, tx_buf_, TXCircularBuffer.read(tx_buf_, sizeof(tx_buf_))) != HAL_OK)
                     {
-                        *processed_bytes += chunk;
+                        return -1;
                     }
                 }
             }
@@ -60,7 +99,7 @@ public:
         return 0;
     }
 
-    size_t get_free_space() { return SIZE_MAX; }
+    size_t get_free_space() { return TXCircularBuffer.remainingSpace(); }
 
 private:
     UART_HandleTypeDef * m_pHuart;
@@ -86,6 +125,7 @@ void start_uart_server()
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
 
+    uart_thread = UARTControl.getHandle();
     // Start UART communication thread
     UARTControl.start(osPriorityNormal);
 }
