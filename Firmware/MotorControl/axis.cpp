@@ -510,7 +510,7 @@ bool Axis::run_state(void)
     return status;
 }
 
-void Axis::request_state(State_t requestedState)
+void Axis::request_state(State_t & requestedState)
 {
     if (requestedState != AXIS_STATE_UNDEFINED) {
         if (requestedState == AXIS_STATE_STARTUP_SEQUENCE) {

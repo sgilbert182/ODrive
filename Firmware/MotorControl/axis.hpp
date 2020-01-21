@@ -190,7 +190,7 @@ public:
     bool run_idle_loop();
 
     bool run_state(void);
-    void request_state(State_t requestedState);
+    void request_state(State_t & requestedState);
     void run_state_machine_loop();
     auto make_protocol_definitions();
 
