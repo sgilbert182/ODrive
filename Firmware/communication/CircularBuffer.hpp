@@ -193,13 +193,19 @@ size_t CCBBuffer<dataType_t>::remainingSpace(void)
 template <class dataType_t>
 size_t CCBBuffer<dataType_t>::remainingSpaceLinear(void)
 {
+    size_t length = 0;
 
 /* if end is less than start index then data goes from start pointer to size of
  * array and start of array to end index. free space exists between end index
- * and start index. If start is less than end index, then data does from end
+ * and start index. If start is less than end index, then data goes from end
  * index to numElements of array and start of array to start index.
  */
-    return (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.end : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
+    if (!isFull())
+    {
+        length = (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.start : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
+    }
+
+    return length;
 }
 
 /**\brief   Checks used space in the buffer
@@ -241,7 +247,7 @@ bool CCBBuffer<dataType_t>::flushBuffer(void)
 
     }
 
-    memset(m_cb.pArray, 0, (m_cb.tracker.numElements * sizeof(dataType_t)));
+    memset(m_cb.pArray, 0, (m_cb.tracker.numElements * sizeof(m_cb.pArray[0])));
     m_cb.tracker.start = 0;
     m_cb.tracker.end   = 0;
 
@@ -280,11 +286,11 @@ int32_t CCBBuffer<dataType_t>::write(const dataType_t * const pData, size_t leng
             }
             else                                                                /* else */
             {
-                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the neccessary elements */
+                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the necessary elements */
             }
         }
 
-        memcpy(&m_cb.pArray[m_cb.tracker.end], &pData[writeCnt], toWrite * sizeof(dataType_t));
+        memcpy(&m_cb.pArray[m_cb.tracker.end], &pData[writeCnt], toWrite * sizeof(m_cb.pArray[0]));
         m_cb.tracker.end = ((m_cb.tracker.end + toWrite) % (int32_t)m_cb.tracker.numElements);
     }
 
@@ -326,7 +332,7 @@ int32_t CCBBuffer<dataType_t>::peak(dataType_t * pData, size_t length)
         size_t linearLength = usedSpaceLinear();
         size_t leftToRead = length - readCnt;
         toRead = (leftToRead < linearLength) ? leftToRead : linearLength;
-        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(dataType_t));
+        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(m_cb.pArray[0]));
     }
 
     return readCnt;
@@ -355,7 +361,7 @@ int32_t CCBBuffer<dataType_t>::read(dataType_t * pData, size_t length)
         size_t linearLength = usedSpaceLinear();
         size_t leftToRead = length - readCnt;
         toRead = (leftToRead < linearLength) ? leftToRead : linearLength;
-        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(dataType_t));
+        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(m_cb.pArray[0]));
         m_cb.tracker.start = ((m_cb.tracker.start + toRead) % (int32_t)m_cb.tracker.numElements);
     }
 
