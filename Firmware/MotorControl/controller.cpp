@@ -57,6 +57,16 @@ void Controller::move_to_pos(float goal_point) {
     trajectory_done_ = false;
 }
 
+void Controller::move_absolute(float displacement, bool from_input_pos = true){
+    if(from_input_pos){
+        input_pos_ = displacement;
+    } else{
+        input_pos_ = pos_setpoint_ + displacement;
+    }
+
+    input_pos_updated();
+}
+
 void Controller::move_incremental(float displacement, bool from_input_pos = true){
     if(from_input_pos){
         input_pos_ += displacement;
@@ -90,18 +100,16 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     }
     if (config_.anticogging.index < 3600) {
         config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-        input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
         input_vel_ = 0.0f;
         input_current_ = 0.0f;
-        input_pos_updated();
+        move_absolute(config_.anticogging.index * axis_->encoder_.getCoggingRatio());
         return false;
     } else {
         config_.anticogging.index = 0;
         config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-        input_pos_ = 0.0f;  // Send the motor home
         input_vel_ = 0.0f;
         input_current_ = 0.0f;
-        input_pos_updated();
+        move_absolute(0.0f);// Send the motor home
         anticogging_valid_ = true;
         config_.anticogging.calib_anticogging = false;
         return true;

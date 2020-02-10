@@ -83,6 +83,7 @@ public:
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
+    void move_absolute(float displacement, bool from_goal_point);
     void move_incremental(float displacement, bool from_goal_point);
     
     // TODO: make this more similar to other calibration loops
