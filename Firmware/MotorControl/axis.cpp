@@ -5,6 +5,7 @@
 
 #include "utils.h"
 #include "odrive_main.h"
+#include "TaskConfigs.hpp"
 
 Axis::Axis(int axis_num,
            const AxisHardwareConfig_t& hw_config,
@@ -79,8 +80,16 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
-    thread_id_ = osThreadCreate(osThread(thread_def), this);
+
+    const osThreadDef_t os_thread_def_Axis_thread = {
+            Axis_thread.pThreadName,
+            run_state_machine_loop_wrapper,
+            hw_config_.thread_priority,
+            0,
+            Axis_thread.stackSize
+    };
+
+    thread_id_ = osThreadCreate(&os_thread_def_Axis_thread, this);
     thread_id_valid_ = true;
 }
 

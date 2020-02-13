@@ -20,6 +20,7 @@
 #include <utils.h>
 
 #include "odrive_main.h"
+#include "TaskConfigs.hpp"
 
 /* Private defines -----------------------------------------------------------*/
 
@@ -753,6 +754,13 @@ static void analog_polling_thread(void *)
 
 void start_analog_thread()
 {
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
-    osThreadCreate(osThread(thread_def), NULL);
+    const osThreadDef_t os_thread_def_AnalogServer = {
+            Analog_server.pThreadName,
+            analog_polling_thread,
+            Analog_server.priority,
+            0,
+            Analog_server.stackSize
+    };
+
+    osThreadCreate(&os_thread_def_AnalogServer, NULL);
 }

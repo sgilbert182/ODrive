@@ -13,6 +13,8 @@
 
 #include <odrive_main.h>
 
+#include "TaskConfigs.hpp"
+
 osThreadId usb_thread;
 USBStats_t usb_stats_ = {0};
 
@@ -176,7 +178,15 @@ void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair) {
 }
 
 void start_usb_server() {
+
+    const osThreadDef_t os_thread_def_USB_server = {
+            USB_server.pThreadName,
+            usb_server_thread,
+            USB_server.priority,
+            0,
+            USB_server.stackSize
+    };
     // Start USB communication thread
-    osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 1024);
-    usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);
+
+    usb_thread = osThreadCreate(&os_thread_def_USB_server, NULL);
 }

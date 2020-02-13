@@ -23,6 +23,8 @@
 
 #include <type_traits>
 
+#include "TaskConfigs.hpp"
+
 /* Private defines -----------------------------------------------------------*/
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -83,9 +85,16 @@ auto make_protocol_definitions(PWMMapping_t& mapping) {
 void init_communication(void) {
     printf("hi!\r\n");
 
+    const osThreadDef_t os_thread_def_CMDParser = {
+            cmd_parse.pThreadName,
+            communication_task,
+            cmd_parse.priority,
+            0,
+            cmd_parse.stackSize // TODO: fix stack issues
+    };
+
     // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 8000 /* in 32-bit words */); // TODO: fix stack issues
-    comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
+    comm_thread = osThreadCreate(&os_thread_def_CMDParser, NULL);
 
     while (!endpoint_list_valid)
         osDelay(1);

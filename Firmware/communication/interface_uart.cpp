@@ -8,6 +8,8 @@
 #include <cmsis_os.h>
 #include <freertos_vars.h>
 
+#include "TaskConfigs.hpp"
+
 #define UART_TX_BUFFER_SIZE 64
 #define UART_RX_BUFFER_SIZE 64
 
@@ -83,13 +85,16 @@ void start_uart_server() {
 	// taken out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
 
+    const osThreadDef_t os_thread_def_UART_server = {
+            UART_server.pThreadName,
+            uart_server_thread,
+            UART_server.priority,
+            0,
+            UART_server.stackSize
+    };
+
     // Start UART communication thread
-    osThreadDef(uart_server_thread_def,
-                uart_server_thread,
-                osPriorityNormal,
-                0,
-                1024 /* the ascii protocol needs considerable stack space */);
-    uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
+    uart_thread = osThreadCreate(&os_thread_def_UART_server, NULL);
 }
 
 /**
