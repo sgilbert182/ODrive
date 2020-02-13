@@ -73,8 +73,11 @@ public:
     virtual ~UARTSender() = default;
     int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes)
     {
-        for(auto written = 0u; written < length; written += TXCircularBuffer.write(buffer, length))
+        auto written = 0u;
+
+        while (written < length)
         {
+            written += TXCircularBuffer.write(buffer, length);
             if(nullptr != processed_bytes)
             {
                     *processed_bytes = written;
