@@ -44,6 +44,10 @@ typedef enum
 TYPES
 *******************************************************************************/
 
+#ifndef ARRAY_LEN
+#define ARRAY_LEN(x) sizeof(x) / sizeof(x[0])
+#endif
+
 /*******************************************************************************
 GLOBAL VARIABLES
 *******************************************************************************/
@@ -81,6 +85,7 @@ public:
     size_t usedSpaceLinear();
     bool flushBuffer();
     int32_t write(const dataType_t * const elem, size_t length);
+    int32_t peak(dataType_t * pData, size_t length);
     int32_t read(dataType_t * elem, size_t length);
     bool readNewest(dataType_t * pData);
 
