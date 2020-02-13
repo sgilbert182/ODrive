@@ -182,6 +182,7 @@ build{
         'Drivers/DRV8301',
         'MotorControl',
         'fibre/cpp/include',
+		'Tasks/Inc',
         '.'
     }
 }
