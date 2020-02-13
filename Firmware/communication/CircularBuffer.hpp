@@ -77,14 +77,14 @@ public:
 
     CCBBuffer(dataType_t * pArray = nullptr, const size_t size = 0, const bool useMutex = false, const bool overwriteOldData = false);
     ~CCBBuffer() = default;
-    bool isFull();
-    bool isEmpty();
-    size_t remainingSpace();
-    size_t remainingSpaceLinear();
-    size_t usedSpace();
-    size_t usedSpaceLinear();
-    bool flushBuffer();
     bool init(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData);
+    bool isFull(void);
+    bool isEmpty(void);
+    size_t remainingSpace(void);
+    size_t remainingSpaceLinear(void);
+    size_t usedSpace(void);
+    size_t usedSpaceLinear(void);
+    bool flushBuffer(void);
     int32_t write(const dataType_t * const elem, size_t length);
     int32_t write(const dataType_t Data);
     int32_t peak(dataType_t * pData, size_t length);
@@ -162,7 +162,7 @@ bool CCBBuffer<dataType_t>::init(dataType_t * pArray, const size_t numElements, 
  * \return  TRUE for full FALSE for not
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::isFull()
+bool CCBBuffer<dataType_t>::isFull(void)
 {
     return (((m_cb.tracker.end + 1) % (int32_t)m_cb.tracker.numElements) == m_cb.tracker.start);
 }
@@ -174,7 +174,7 @@ bool CCBBuffer<dataType_t>::isFull()
  * \return  FALSE for non-empty TRUE for not
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::isEmpty()
+bool CCBBuffer<dataType_t>::isEmpty(void)
 {
     return (m_cb.tracker.end == m_cb.tracker.start);
 }
@@ -186,7 +186,7 @@ bool CCBBuffer<dataType_t>::isEmpty()
  * \return  Unused space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::remainingSpace()
+size_t CCBBuffer<dataType_t>::remainingSpace(void)
 {
     return (m_cb.tracker.numElements - usedSpace());
 }
@@ -199,7 +199,7 @@ size_t CCBBuffer<dataType_t>::remainingSpace()
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::remainingSpaceLinear()
+size_t CCBBuffer<dataType_t>::remainingSpaceLinear(void)
 {
 
 /* if end is less than start index then data goes from start pointer to size of
@@ -217,7 +217,7 @@ size_t CCBBuffer<dataType_t>::remainingSpaceLinear()
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::usedSpace()
+size_t CCBBuffer<dataType_t>::usedSpace(void)
 {
     return (size_t)(m_cb.tracker.end + ((m_cb.tracker.end < m_cb.tracker.start) ? (int32_t)m_cb.tracker.numElements : 0) - m_cb.tracker.start);
 }
@@ -230,7 +230,7 @@ size_t CCBBuffer<dataType_t>::usedSpace()
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::usedSpaceLinear()
+size_t CCBBuffer<dataType_t>::usedSpaceLinear(void)
 {
     return (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? (int32_t)m_cb.tracker.numElements : m_cb.tracker.end) - m_cb.tracker.start);
 }
@@ -242,7 +242,7 @@ size_t CCBBuffer<dataType_t>::usedSpaceLinear()
  * \return  TRUE if successful FALSE if fail
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::flushBuffer()
+bool CCBBuffer<dataType_t>::flushBuffer(void)
 {
     if(m_useMutex)
     {
