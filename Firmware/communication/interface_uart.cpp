@@ -56,11 +56,8 @@ static uint8_t RXBuffer[UART_RX_BUFFER_SIZE];
 CCBBuffer<uint8_t> CRXCircularBuffer(RXBuffer, sizeof(RXBuffer), false, false);
 
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-// static thread_local uint32_t deadline_ms = 0;
-
 osThreadId uart_thread;
 
-class UART4Sender 
 /*******************************************************************************
 INTERNAL FUNCTION DEFINTIONS
 *******************************************************************************/
@@ -69,6 +66,7 @@ INTERNAL FUNCTION DEFINTIONS
 FUNCTION DECLARATIONS
 *******************************************************************************/
 
+class UARTSender
     : public StreamSink
 {
 public:
@@ -103,6 +101,7 @@ private:
     CCBBuffer<uint8_t> CTXCircularBuffer;
 } uart4_stream_output;
 
+UARTSender uart4_stream_output(&huart4);
 StreamSink * uart4_stream_output_ptr = &uart4_stream_output;
 StreamBasedPacketSink uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
