@@ -71,7 +71,6 @@ class UARTSender
 {
 public:
     UART4Sender()
-        : CTXCircularBuffer(TXBuffer, sizeof(TXBuffer), false, false){}
     int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes)
     {
         // Loop to ensure all bytes get sent
