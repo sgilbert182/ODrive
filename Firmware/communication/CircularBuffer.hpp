@@ -280,7 +280,7 @@ int32_t CCBBuffer<dataType_t>::write(const dataType_t * const pData, size_t leng
             }
             else                                                                /* else */
             {
-                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the neccessary elements */
+                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the necessary elements */
             }
         }
 
