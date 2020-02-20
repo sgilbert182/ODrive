@@ -112,12 +112,12 @@ bool CSubscribeBase::subscribe(GPIO_TypeDef * GPIO_port
     // if one has been made available
     if (nullptr != subscription)
     {
-        *subscription->GPIO_port = GPIO_port;
-        *subscription->GPIO_InitStruct.Pin = GPIO_pin;
-        *subscription->GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-        *subscription->GPIO_InitStruct.Pull = pull_up_down;
-        *subscription->callback = callback;
-        *subscription->ctx = ctx;
+        subscription->GPIO_port = GPIO_port;
+        subscription->GPIO_InitStruct.Pin = GPIO_pin;
+        subscription->GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+        subscription->GPIO_InitStruct.Pull = pull_up_down;
+        subscription->callback = callback;
+        subscription->ctx = ctx;
 
         configureGPIO(subscription);
         returnVal = true;
@@ -208,9 +208,9 @@ callbackFuncPtr_t CSubscribeBase::getCallback(uint32_t listID)
 void CSubscribeEXTI::configureGPIO(subscription_t * pSubscription)
 {
     // Set up GPIO
-    HAL_GPIO_Init(*pSubscription->GPIO_port, &pSubscription->GPIO_InitStruct);
+    HAL_GPIO_Init(pSubscription->GPIO_port, &pSubscription->GPIO_InitStruct);
     // Clear any previous triggers
-    __HAL_GPIO_EXTI_CLEAR_IT(*pSubscription->GPIO_InitStruct.Pin);
+    __HAL_GPIO_EXTI_CLEAR_IT(pSubscription->GPIO_InitStruct.Pin);
     // Enable interrupt
     HAL_NVIC_SetPriority(getIRQNumber(pSubscription->GPIO_InitStruct.Pin), 0, 0);
     HAL_NVIC_EnableIRQ(getIRQNumber(pSubscription->GPIO_InitStruct.Pin));
