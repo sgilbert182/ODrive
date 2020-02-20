@@ -42,7 +42,7 @@ class CGPIOData
 {
 public:
     CGPIOData(void);
-    ~CGPIOData(void);
+    ~CGPIOData(void) = default;
     void update(uint32_t newState);
     uint32_t debounce(void);
     bool isAsserted(uint32_t button);
