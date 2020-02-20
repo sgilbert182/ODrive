@@ -164,16 +164,34 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
     }
 }
 
+/**\brief       Gets pointer to subscription list.
+ *
+ * \param       None
+ *
+ * \return      None
+ */
 CSubscribeBase::subscription_t const * const CSubscribeBase::getSubscriptionList(void)
 {
     return subscriptions;
 }
 
+/**\brief       Gets active count on the subscription list.
+ *
+ * \param       None
+ *
+ * \return      None
+ */
 size_t CSubscribeBase::getSubscriptionCount(void)
 {
     return n_subscriptions;
 }
 
+/**\brief       Gets pointer to callback function.
+ *
+ * \param       listID  - subscription entry ID
+ *
+ * \return      None
+ */
 void * CSubscribeBase::getCallback(uint32_t listID)
 {
     return subscriptions[listID].callback;
