@@ -8,6 +8,9 @@
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
 
+#include "DebounceTask.hpp"
+#include "TaskConfigs.hpp"
+
 BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
@@ -20,6 +23,18 @@ bool user_config_loaded_;
 SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
+
+const osThreadDef_t os_thread_def_debounce = {
+        DebounceTask.pThreadName,
+        nullptr,    // this gets populated in the task.start routine
+        DebounceTask.priority,
+        0,
+        DebounceTask.stackSize
+};
+
+#define DEBOUNCE_TIME_MS (10)
+CSubscribeDebounce::subscription_t subscriptionTable[10]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time
+CDebounceTask debounceTask(os_thread_def_debounce, DEBOUNCE_TIME_MS, subscriptionTable, ARRAY_LEN(subscriptionTable));
 
 typedef Config<
     BoardConfig_t,
@@ -158,6 +173,8 @@ int odrive_main(void) {
     GPIO_InitStruct.Pin = GPIO_5_Pin;
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
 #endif
+
+    debounceTask.start();
 
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
