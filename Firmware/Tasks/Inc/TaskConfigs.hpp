@@ -49,6 +49,7 @@ constexpr taskStruct_t UART_server      {"UARTServer",          1024, osPriority
 constexpr taskStruct_t USB_server       {"USBServer",           1024, osPriorityNormal};
 constexpr taskStruct_t Axis_thread      {"AxisServer",          2048, osPriorityNormal};
 constexpr taskStruct_t Analog_server    {"AnalogServer",        2048, osPriorityLow};
+constexpr taskStruct_t DebounceTask     {"DebounceTask",        2048, osPriorityNormal};
 
 /*******************************************************************************
 NAMESPACE
