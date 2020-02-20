@@ -50,6 +50,19 @@ MODULE FUNCTION DECLARATIONS
 FUNCTION DEFINITIONS
 *******************************************************************************/
 
+/**\brief   Constructor.
+ *
+ * \param   pTable      - pointer to the subscription table space
+ * \param   maxEntries  - size of table space
+ *
+ * \return  returns pointer to active subscription or nullptr if not found
+ */
+CSubscribeBase::CSubscribeBase(subscription_t * pTable, size_t maxEntries)
+    : m_pTable(pTable)
+    , m_maxEntries(maxEntries)
+    , m_subscriptionCtr(0)
+{}
+
 /**\brief   Checks to see if the GPIO details have already got an active
  *          subscription and returns the pointer.
  *

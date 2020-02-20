@@ -25,8 +25,6 @@ INCLUDES
 DEFINITIONS
 *******************************************************************************/
 
-#define MAX_SUBSCRIPTIONS 10
-
 /*******************************************************************************
 TYPES
 *******************************************************************************/
@@ -61,8 +59,8 @@ public:
     } subscription_t;
 
 public:
-    CSubscribeBase();
-    virtual ~CSubscribeBase();
+    CSubscribeBase(subscription_t * m_pSubscriptions, size_t maxEntries);
+    virtual ~CSubscribeBase(void) = default;
     bool subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
                    uint32_t pull_up_down,
                    callbackFuncPtr_t callback, void * ctx);
