@@ -63,9 +63,9 @@ CSubscribeBase::subscription_t * CSubscribeBase::findActiveSubscription(GPIO_Typ
 {
     subscription_t * returnVal = nullptr;
 
-    for (size_t i = 0; i < n_subscriptions; ++i)
+    for (size_t i = 0; i < m_subscriptionCtr; ++i)
     {
-        subscription_t * pSubscription = &subscriptions[i];
+        subscription_t * pSubscription = &m_pTable[i];
         if ((pSubscription->GPIO_port == GPIO_port)
                 && (pSubscription->GPIO_InitStruct.Pin == GPIO_pin))
         {
@@ -102,10 +102,10 @@ bool CSubscribeBase::subscribe(GPIO_TypeDef * GPIO_port
     // if one is not found then assign the next available one
     if (nullptr == subscription)
     {
-        if (n_subscriptions < MAX_SUBSCRIPTIONS)
+        if (m_subscriptionCtr < m_maxEntries)
         {
-            subscription = &subscriptions[n_subscriptions];
-            ++n_subscriptions;
+            subscription = &m_pTable[m_subscriptionCtr];
+            ++m_subscriptionCtr;
         }
     }
 
@@ -139,9 +139,9 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
     subscription_t * pSubscription;
     uint32_t subscribeID = 0;
 
-    for (size_t i = 0; i < n_subscriptions; ++i)
+    for (size_t i = 0; i < m_subscriptionCtr; ++i)
     {
-        pSubscription = &subscriptions[i];
+        pSubscription = &m_pTable[i];
         // if there is a complete match then clear entries
         if ((pSubscription->GPIO_port == GPIO_port)
                 && (pSubscription->GPIO_InitStruct.Pin == GPIO_pin))
@@ -162,7 +162,7 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
 
     if (!is_pin_in_use)
     {
-        unconfigureGPIO(&subscriptions[subscribeID]);
+        unconfigureGPIO(&m_pTable[subscribeID]);
     }
 }
 
@@ -174,7 +174,7 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
  */
 CSubscribeBase::subscription_t const * const CSubscribeBase::getSubscriptionList(void)
 {
-    return subscriptions;
+    return m_pTable;
 }
 
 /**\brief   Gets active count on the subscription list.
@@ -185,7 +185,7 @@ CSubscribeBase::subscription_t const * const CSubscribeBase::getSubscriptionList
  */
 size_t CSubscribeBase::getSubscriptionCount(void)
 {
-    return n_subscriptions;
+    return m_subscriptionCtr;
 }
 
 /**\brief   Gets pointer to callback function.
@@ -196,7 +196,7 @@ size_t CSubscribeBase::getSubscriptionCount(void)
  */
 callbackFuncPtr_t CSubscribeBase::getCallback(uint32_t listID)
 {
-    return subscriptions[listID].callback;
+    return m_pTable[listID].callback;
 }
 
 /**\brief   Configures GPIO for external interrupt.

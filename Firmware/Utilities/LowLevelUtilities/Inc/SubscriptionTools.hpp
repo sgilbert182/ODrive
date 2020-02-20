@@ -78,8 +78,9 @@ private:
     virtual void unconfigureGPIO(subscription_t * pSubscription) = 0;
 
 private:
-    subscription_t subscriptions[MAX_SUBSCRIPTIONS] = { 0 };
-    size_t n_subscriptions = 0;
+    subscription_t * m_pTable;
+    size_t m_maxEntries;
+    size_t m_subscriptionCtr;
 };
 
 class CSubscribeEXTI
