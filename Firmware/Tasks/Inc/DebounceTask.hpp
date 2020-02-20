@@ -45,6 +45,14 @@ NAMESPACE
 class CSubscribeDebounce
     : public CSubscribeBase
 {
+public:
+    CSubscribeDebounce(subscription_t * m_pSubscriptions, size_t maxEntries)
+    : CSubscribeBase(m_pSubscriptions, maxEntries)
+{
+
+}
+    ~CSubscribeDebounce() = default;
+
 private:
     void configureGPIO(subscription_t * subscription) override;
     void unconfigureGPIO(subscription_t * subscription) override;
@@ -54,7 +62,9 @@ class CDebounceTask
 {
 public:
     CDebounceTask(osThreadDef_t OSThreadDef
-                  , uint32_t period);
+                  , uint32_t period
+                  , CSubscribeDebounce::subscription_t * m_pSubscriptions
+                  , size_t maxEntries);
     ~CDebounceTask(void) = default;
     void start(void);
     void threadFunc(void * ctx);

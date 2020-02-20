@@ -82,12 +82,14 @@ void CSubscribeDebounce::unconfigureGPIO(subscription_t * subscription)
  *
  * \return  None
  */
-CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period)
+CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period
+                             , CSubscribeDebounce::subscription_t * m_pSubscriptions
+                             , size_t maxEntries)
     : m_OSThreadDef(OSThreadDef)
     , m_threadID(nullptr)
     , m_period(period)
     , GPIOData()
-    , m_subscribedGPIOs()
+    , m_subscribedGPIOs(m_pSubscriptions, maxEntries)
 {
 
 }
