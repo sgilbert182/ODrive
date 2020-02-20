@@ -175,6 +175,8 @@ build{
         'communication/interface_usb.cpp',
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
+		'Utilities/LowLevelUtilities/Src/GPIODebounceTools.cpp',
+		'Tasks/Src/DebounceTask.cpp',
         'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c'
     },
@@ -183,6 +185,8 @@ build{
         'MotorControl',
         'fibre/cpp/include',
 		'Tasks/Inc',
+		'Utilities/LowLevelUtilities/Inc',
+		'communication',
         '.'
     }
 }
