@@ -237,7 +237,7 @@ void CSubscribeEXTI::unconfigureGPIO(subscription_t * pSubscription)
  */
 IRQn_Type CSubscribeEXTI::getIRQNumber(uint16_t pin)
 {
-    IRQn_Type returnVal = 0;
+    IRQn_Type returnVal = (IRQn_Type)0;
     uint16_t pin_number = 0;
     uint16_t pinID = (pin >> 1);
 
@@ -265,7 +265,7 @@ IRQn_Type CSubscribeEXTI::getIRQNumber(uint16_t pin)
         case 13:
         case 14:
         case 15: returnVal = EXTI15_10_IRQn; break;
-        default: returnVal = 0; break; // impossible fixme this 'id' represents the watchdog ISR
+        default: returnVal = (IRQn_Type)0; break; // impossible fixme this 'id' represents the watchdog ISR
     }
 
     return returnVal;
