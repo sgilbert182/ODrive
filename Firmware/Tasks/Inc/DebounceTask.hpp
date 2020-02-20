@@ -61,7 +61,7 @@ public:
     bool subscribe(GPIO_TypeDef * GPIO_port
                   , uint16_t GPIO_pin
                   , uint32_t pull_up_down
-                  , void (* callback)(void *)
+                  , callbackFuncPtr_t callback
                   , void * ctx);
 
 private:

@@ -18,6 +18,10 @@ INCLUDES
 #include "GPIODebounceTools.hpp"
 
 /*******************************************************************************
+NAMESPACE
+*******************************************************************************/
+
+/*******************************************************************************
 DEFINITIONS
 *******************************************************************************/
 
@@ -41,11 +45,11 @@ INTERNAL FUNCTION PROTOTYPES
 FUNCTION IMPLEMENTATIONS
 *******************************************************************************/
 
-/**\brief       Constructor
+/**\brief   Constructor
  *
- * \param       None
+ * \param   None
  *
- * \return      None
+ * \return  None
  */
 CGPIOData::CGPIOData(void)
     : m_stateCB(m_stateArray, ARRAY_LEN(m_stateArray), false, true)
@@ -54,11 +58,11 @@ CGPIOData::CGPIOData(void)
 
 }
 
-/**\brief       adds new GPIO state to buffer
+/**\brief   adds new GPIO state to buffer
  *
- * \param       newState        - new value to add to array
+ * \param   newState    - new value to add to array
  *
- * \return      None
+ * \return  None
  */
 void CGPIOData::update(uint32_t newState)
 {
@@ -66,11 +70,11 @@ void CGPIOData::update(uint32_t newState)
     m_state = debounce();
 }
 
-/**\brief       GPIO de-bounce task
+/**\brief   GPIO de-bounce task
  *
- * \param       None
+ * \param   None
  *
- * \return      returns all de-bounced GPIO states
+ * \return  returns all de-bounced GPIO states
  */
 uint32_t CGPIOData::debounce(void)
 {
@@ -84,22 +88,22 @@ uint32_t CGPIOData::debounce(void)
     return returnVal;
 }
 
-/**\brief       Has selected GPIO been asserted
+/**\brief   Has selected GPIO been asserted
  *
- * \param       GPIOID  - GPIO to be checked
+ * \param   GPIOID  - GPIO to be checked
  *
- * \return      returns true if the selected GPIO has been pressed
+ * \return  returns true if the selected GPIO has been pressed
  */
 bool CGPIOData::isAsserted(uint32_t GPIOID)
 {
     return (0u < (m_state & GPIOID));
 }
 
-/**\brief       Has any GPIO been asserted
+/**\brief   Has any GPIO been asserted
  *
- * \param       None
+ * \param   None
  *
- * \return      returns true if any GPIO has been pressed
+ * \return  returns true if any GPIO has been pressed
  */
 bool CGPIOData::anyAsserted(void)
 {

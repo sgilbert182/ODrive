@@ -31,6 +31,8 @@ DEFINITIONS
 TYPES
 *******************************************************************************/
 
+typedef void (* callbackFuncPtr_t)(void *);
+
 /*******************************************************************************
 GLOBAL VARIABLES
 *******************************************************************************/
@@ -54,8 +56,7 @@ public:
     {
       GPIO_TypeDef * GPIO_port;
       GPIO_InitTypeDef GPIO_InitStruct;
-      uint16_t GPIO_pin;
-      void (*callback)(void*);
+      callbackFuncPtr_t callback;
       void* ctx;
     } subscription_t;
 
@@ -64,17 +65,17 @@ public:
     virtual ~CSubscribeBase();
     bool subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
                    uint32_t pull_up_down,
-                   void (*callback)(void*), void* ctx);
+                   callbackFuncPtr_t callback, void * ctx);
     void unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
     subscription_t const * const getSubscriptionList(void);
     size_t getSubscriptionCount(void);
-    void * getCallback(uint32_t listID);
+    callbackFuncPtr_t getCallback(uint32_t listID);
 
 private:
     subscription_t * findActiveSubscription(GPIO_TypeDef* GPIO_port
                                             , uint16_t GPIO_pin);
-    virtual void configureGPIO(subscription_t * subscription) = 0;
-    virtual void unconfigureGPIO(subscription_t * subscription) = 0;
+    virtual void configureGPIO(subscription_t * pSubscription) = 0;
+    virtual void unconfigureGPIO(subscription_t * pSubscription) = 0;
 
 private:
     subscription_t subscriptions[MAX_SUBSCRIPTIONS] = { 0 };
@@ -85,8 +86,8 @@ class CSubscribeEXTI
     : public CSubscribeBase
 {
 private:
-    void configureGPIO(subscription_t * subscription) override;
-    void unconfigureGPIO(subscription_t * subscription) override;
+    void configureGPIO(subscription_t * pSubscription) override;
+    void unconfigureGPIO(subscription_t * pSubscription) override;
     IRQn_Type getIRQNumber(uint16_t pin);
 };
 
