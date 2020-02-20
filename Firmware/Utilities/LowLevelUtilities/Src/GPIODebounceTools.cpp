@@ -43,19 +43,18 @@ FUNCTION IMPLEMENTATIONS
 
 /**\brief       Constructor
  *
- * \param       debounceWindow  - length of the de-bounce array
+ * \param       None
  *
  * \return      None
  */
-CGPIOData::CGPIOData(uint32_t debounceWindow)
-    : m_debounceWindow(debounceWindow)
-    , m_stateCB(m_stateArray, ARRAY_LEN(m_stateArray), false, true)
+CGPIOData::CGPIOData(void)
+    : m_stateCB(m_stateArray, ARRAY_LEN(m_stateArray), false, true)
     , m_state(0)
 {
 
 }
 
-/**\brief       adds new button state to buffer
+/**\brief       adds new GPIO state to buffer
  *
  * \param       newState        - new value to add to array
  *
@@ -67,43 +66,42 @@ void CGPIOData::update(uint32_t newState)
     m_state = debounce();
 }
 
-/**\brief       button de-bounce task
+/**\brief       GPIO de-bounce task
  *
  * \param       None
  *
- * \return      returns all de-bounced button states
+ * \return      returns all de-bounced GPIO states
  */
 uint32_t CGPIOData::debounce(void)
 {
     uint32_t returnVal = 0xffff;
 
-    for(auto i = 0; i < m_debounceWindow; ++i)
+    for(auto i = 0u; i < ARRAY_LEN(m_stateArray); ++i)
     {
-        returnVal &= (uint32_t)m_stateArray[i];
+        returnVal &= m_stateArray[i];
     }
 
     return returnVal;
 }
 
-/**\brief       Has selected button been pressed
+/**\brief       Has selected GPIO been asserted
  *
- * \param       button  - button to be checked
+ * \param       GPIOID  - GPIO to be checked
  *
- * \return      returns true if the selected button has been pressed
+ * \return      returns true if the selected GPIO has been pressed
  */
-bool CGPIOData::isPressed(uint32_t button)
+bool CGPIOData::isAsserted(uint32_t GPIOID)
 {
-    return (0u < (m_state & button));
+    return (0u < (m_state & GPIOID));
 }
 
-/**\brief       Has any button been pressed
+/**\brief       Has any GPIO been asserted
  *
  * \param       None
  *
- * \return      returns true if any button has been pressed
+ * \return      returns true if any GPIO has been pressed
  */
-bool CGPIOData::anyPressed(void)
+bool CGPIOData::anyAsserted(void)
 {
     return (0u < (m_state & 0xffff));
 }
-

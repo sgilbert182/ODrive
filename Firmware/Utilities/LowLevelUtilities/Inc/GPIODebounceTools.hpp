@@ -41,16 +41,15 @@ NAMESPACE
 class CGPIOData
 {
 public:
-    CGPIOData(uint32_t debounceWindow);
+    CGPIOData(void);
     ~CGPIOData(void);
     void update(uint32_t newState);
     uint32_t debounce(void);
-    bool isPressed(uint32_t button);
-    bool anyPressed(void);
+    bool isAsserted(uint32_t button);
+    bool anyAsserted(void);
 
 private:
-    uint32_t m_debounceWindow;
-    volatile uint32_t m_stateArray[m_debounceWindow];
+    uint32_t m_stateArray[DEBOUNCEWINDOW];
     CCBBuffer<uint32_t> m_stateCB;
     uint32_t m_state;
 
