@@ -65,6 +65,9 @@ public:
                   , void * ctx);
 
 private:
+    void updateIOs(uint32_t subscribeCount);
+    void checkDebouncedIOs(uint32_t subscribeCount);
+    bool isAsserted(uint32_t GPIOID);
     static void _ThdFunc(void * pArg);
 
 private:
