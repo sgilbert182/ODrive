@@ -58,7 +58,7 @@ FUNCTION DEFINITIONS
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-subscription_t * CSubscribeBase::findActiveSubscription(GPIO_TypeDef* GPIO_port
+CSubscribeBase::subscription_t * CSubscribeBase::findActiveSubscription(GPIO_TypeDef* GPIO_port
                                                             , uint16_t GPIO_pin)
 {
     subscription_t * returnVal = nullptr;
