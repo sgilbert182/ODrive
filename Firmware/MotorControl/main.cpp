@@ -163,7 +163,7 @@ int odrive_main(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Pin = GPIO_1_Pin;
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_2_Pin;
+    GPIO_InitStruct.Pin = GPIO_2_Pin; // todo I think you can or these, SG
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_3_Pin;
     HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
