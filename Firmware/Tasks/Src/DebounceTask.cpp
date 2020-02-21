@@ -59,9 +59,7 @@ FUNCTION DEFINITIONS
  */
 CSubscribeDebounce::CSubscribeDebounce(subscription_t * pTable, size_t maxEntries)
     : CSubscribeBase(pTable, maxEntries)
-{
-
-}
+{}
 
 /**\brief   Configures GPIO for de-bouncing.
  *
