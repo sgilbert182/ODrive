@@ -84,6 +84,10 @@ private:
 class CSubscribeEXTI
     : public CSubscribeBase
 {
+public:
+    CSubscribeEXTI(subscription_t * pTable, size_t maxEntries);
+    ~CSubscribeEXTI() = default;
+
 private:
     void configureGPIO(subscription_t * pSubscription) override;
     void unconfigureGPIO(subscription_t * pSubscription) override;

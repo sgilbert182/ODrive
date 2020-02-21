@@ -212,6 +212,17 @@ callbackFuncPtr_t CSubscribeBase::getCallback(uint32_t listID)
     return m_pTable[listID].callback;
 }
 
+/**\brief   Constructor.
+ *
+ * \param   pTable      - pointer to the subscription table space
+ * \param   maxEntries  - size of table space
+ *
+ * \return  returns pointer to active subscription or nullptr if not found
+ */
+CSubscribeEXTI::CSubscribeEXTI(subscription_t * pTable, size_t maxEntries)
+    : CSubscribeBase(pTable, maxEntries)
+{}
+
 /**\brief   Configures GPIO for external interrupt.
  *
  * \param   pSubscription   - pointer to struct containing pin assignment
