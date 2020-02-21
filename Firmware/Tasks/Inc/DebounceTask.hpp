@@ -46,11 +46,7 @@ class CSubscribeDebounce
     : public CSubscribeBase
 {
 public:
-    CSubscribeDebounce(subscription_t * m_pSubscriptions, size_t maxEntries)
-    : CSubscribeBase(m_pSubscriptions, maxEntries)
-{
-
-}
+    CSubscribeDebounce(subscription_t * pTable, size_t maxEntries);
     ~CSubscribeDebounce() = default;
 
 private:

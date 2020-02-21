@@ -50,6 +50,19 @@ MODULE FUNCTION DECLARATIONS
 FUNCTION DEFINITIONS
 *******************************************************************************/
 
+/**\brief   Constructor.
+ *
+ * \param   pTable      - pointer to the subscription table space
+ * \param   maxEntries  - size of table space
+ *
+ * \return  returns pointer to active subscription or nullptr if not found
+ */
+CSubscribeDebounce::CSubscribeDebounce(subscription_t * pTable, size_t maxEntries)
+    : CSubscribeBase(pTable, maxEntries)
+{
+
+}
+
 /**\brief   Configures GPIO for de-bouncing.
  *
  * \param   pSubscription   - pointer to struct containing pin assignment
