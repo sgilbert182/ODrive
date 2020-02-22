@@ -93,7 +93,7 @@ private:
     bool removeNode(node_t * pDelete);
 
 private:
-    CMemoryManager<node_t> m_table;                                            /* pointer to the data storage table */
+    CMemoryManager<node_t> m_table;                                             /* pointer to the data storage table */
     size_t m_length;                                                            /* length of the list */
     node_t * m_pHead;                                                           /* pointer to the first node in the chain */
 };
@@ -453,7 +453,7 @@ void CLinkedList<MyType>::flushNode(node_t * pNode)
     if(nullptr != pNode)
     {
         MyType tempData;
-        populateNode(memset(tempData, 0, sizeof(MyType)), pNode, nullptr, nullptr);
+        populateNode((MyType *)memset((void *)&tempData, 0, sizeof(MyType)), pNode, nullptr, nullptr);
     }
 }
 
