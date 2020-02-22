@@ -81,11 +81,11 @@ public:
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
     bool DeleteNodeAtGivenIdx(size_t idx);
+    void * findNode(uint32_t nodeID);
 
 private:
     void populateNode(MyType * pData, node_t * pCurrent, node_t * pNext, node_t * pPrevious);
     void flushNode(node_t * pNode);
-    void * findLast(void);
     bool deleteNode(node_t * pDelete);
 
 private:
