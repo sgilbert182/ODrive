@@ -109,7 +109,7 @@ storageType * CMemoryManager<storageType>::getBuffer(void)
 {
     storageType * returnVal = nullptr;
 
-    for (auto slotIndex = 0; slotIndex < m_maxSlots; ++slotIndex)
+    for (auto slotIndex = 0u; slotIndex < m_maxSlots; ++slotIndex)
     {
         slotDetails_t * pSlotDetails = &m_pTable[slotIndex];
         if (!pSlotDetails->inUse)
@@ -133,7 +133,7 @@ storageType * CMemoryManager<storageType>::getBuffer(void)
 template <class storageType>
 void CMemoryManager<storageType>::releaseBuffer(storageType const * const pBuff)
 {
-    for (auto slotIndex = 0; slotIndex < m_maxSlots; ++slotIndex)
+    for (auto slotIndex = 0u; slotIndex < m_maxSlots; ++slotIndex)
     {
         slotDetails_t * slotDetailsPtr = &m_pTable[slotIndex];
 
