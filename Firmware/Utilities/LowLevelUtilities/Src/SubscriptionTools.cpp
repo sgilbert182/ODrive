@@ -57,11 +57,14 @@ FUNCTION DEFINITIONS
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeBase::CSubscribeBase(subscription_t * pTable, size_t maxEntries)
-    : m_pTable(pTable)
+CSubscribeBase::CSubscribeBase(void * pTable, size_t maxEntries)
+    : m_pTable((subscription_t *)pTable)
     , m_maxEntries(maxEntries)
     , m_subscriptionCtr(0)
-{}
+{
+    xSemaphore = xSemaphoreCreateBinary();
+    xSemaphoreGive(xSemaphore);
+}
 
 /**\brief   Checks to see if the GPIO details have already got an active
  *          subscription and returns the pointer.
@@ -108,32 +111,35 @@ bool CSubscribeBase::subscribe(GPIO_TypeDef * GPIO_port
 {
     bool returnVal = false;
 
-    // TODO: make thread safe
-    // check for a pre-configured subscription for the port and pin
-    subscription_t * subscription = findActiveSubscription(GPIO_port, GPIO_pin);
-
-    // if one is not found then assign the next available one
-    if (nullptr == subscription)
+    if (xSemaphoreTake(xSemaphore, portMAX_DELAY))
     {
-        if (m_subscriptionCtr < m_maxEntries)
+        // check for a pre-configured subscription for the port and pin
+        subscription_t * subscription = findActiveSubscription(GPIO_port, GPIO_pin);
+
+        // if one is not found then assign the next available one
+        if (nullptr == subscription)
         {
-            subscription = &m_pTable[m_subscriptionCtr];
-            ++m_subscriptionCtr;
+            if (m_subscriptionCtr < m_maxEntries)
+            {
+                subscription = &m_pTable[m_subscriptionCtr];
+                ++m_subscriptionCtr;
+            }
         }
-    }
 
-    // if one has been made available
-    if (nullptr != subscription)
-    {
-        subscription->GPIO_port = GPIO_port;
-        subscription->GPIO_InitStruct.Pin = GPIO_pin;
-        subscription->GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-        subscription->GPIO_InitStruct.Pull = pull_up_down;
-        subscription->callback = callback;
-        subscription->ctx = ctx;
+        // if one has been made available
+        if (nullptr != subscription)
+        {
+            subscription->GPIO_port = GPIO_port;
+            subscription->GPIO_InitStruct.Pin = GPIO_pin;
+            subscription->GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+            subscription->GPIO_InitStruct.Pull = pull_up_down;
+            subscription->callback = callback;
+            subscription->ctx = ctx;
 
-        configureGPIO(subscription);
-        returnVal = true;
+            configureGPIO(subscription);
+            returnVal = true;
+        }
+        xSemaphoreGive(xSemaphore);
     }
 
     return returnVal;
@@ -148,34 +154,37 @@ bool CSubscribeBase::subscribe(GPIO_TypeDef * GPIO_port
  */
 void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
 {
-    bool is_pin_in_use = false;
-    subscription_t * pSubscription;
-    uint32_t subscribeID = 0;
-
-    for (size_t i = 0; i < m_subscriptionCtr; ++i)
+    if (xSemaphoreTake(xSemaphore, portMAX_DELAY))
     {
-        pSubscription = &m_pTable[i];
-        // if there is a complete match then clear entries
-        if ((pSubscription->GPIO_port == GPIO_port)
-                && (pSubscription->GPIO_InitStruct.Pin == GPIO_pin))
+        bool is_pin_in_use = false;
+        uint32_t subscribeID = 0;
+
+        for (size_t i = 0; i < m_subscriptionCtr; ++i)
         {
-            pSubscription->callback = NULL;
-            pSubscription->ctx = NULL;
-            subscribeID = i;
-        }
-        else
-        {
-            // if there is only a pin match, we don't want to disable the interrupt
-            if (pSubscription->GPIO_InitStruct.Pin == GPIO_pin)
+            subscription_t * pSubscription = &m_pTable[i];
+            // if there is a complete match then clear entries
+            if ((pSubscription->GPIO_port == GPIO_port)
+                    && (pSubscription->GPIO_InitStruct.Pin == GPIO_pin))
             {
-                is_pin_in_use = true;
+                pSubscription->callback = NULL;
+                pSubscription->ctx = NULL;
+                subscribeID = i;
+            }
+            else
+            {
+                // if there is only a pin match, we don't want to disable the interrupt
+                if (pSubscription->GPIO_InitStruct.Pin == GPIO_pin)
+                {
+                    is_pin_in_use = true;
+                }
             }
         }
-    }
 
-    if (!is_pin_in_use)
-    {
-        unconfigureGPIO(&m_pTable[subscribeID]);
+        if (!is_pin_in_use)
+        {
+            unconfigureGPIO(&m_pTable[subscribeID]);
+        }
+        xSemaphoreGive(xSemaphore);
     }
 }
 
@@ -185,9 +194,12 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
  *
  * \return  None
  */
-CSubscribeBase::subscription_t const * const CSubscribeBase::getSubscriptionList(void)
+bool CSubscribeBase::getSubscriptionList(uint32_t tableID, GPIO_TypeDef * GPIO_port, uint16_t * GPIO_pin)
 {
-    return m_pTable;
+    GPIO_port = m_pTable[tableID].GPIO_port;
+    *GPIO_pin = m_pTable[tableID].GPIO_InitStruct.Pin;
+
+    return true;
 }
 
 /**\brief   Gets active count on the subscription list.
@@ -219,7 +231,7 @@ callbackFuncPtr_t CSubscribeBase::getCallback(uint32_t listID)
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeEXTI::CSubscribeEXTI(subscription_t * pTable, size_t maxEntries)
+CSubscribeEXTI::CSubscribeEXTI(void * pTable, size_t maxEntries)
     : CSubscribeBase(pTable, maxEntries)
 {}
 

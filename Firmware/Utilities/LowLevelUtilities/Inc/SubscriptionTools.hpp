@@ -18,8 +18,11 @@
 INCLUDES
 *******************************************************************************/
 
+#include "LinkedList.hpp"
 #include "stm32F405xx.h"
 #include "stm32f4xx_hal.h"
+#include "freeRTOS.h"
+#include "semphr.h"
 
 /*******************************************************************************
 DEFINITIONS
@@ -55,17 +58,17 @@ public:
       GPIO_TypeDef * GPIO_port;
       GPIO_InitTypeDef GPIO_InitStruct;
       callbackFuncPtr_t callback;
-      void* ctx;
+      void * ctx;
     } subscription_t;
 
 public:
-    CSubscribeBase(subscription_t * m_pSubscriptions, size_t maxEntries);
+    CSubscribeBase(void * m_pSubscriptions, size_t maxEntries);
     virtual ~CSubscribeBase(void) = default;
     bool subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
                    uint32_t pull_up_down,
                    callbackFuncPtr_t callback, void * ctx);
     void unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
-    subscription_t const * const getSubscriptionList(void);
+    bool getSubscriptionList(uint32_t tableID, GPIO_TypeDef * GPIO_port, uint16_t * GPIO_pin);
     size_t getSubscriptionCount(void);
     callbackFuncPtr_t getCallback(uint32_t listID);
 
@@ -76,16 +79,19 @@ private:
     virtual void unconfigureGPIO(subscription_t * pSubscription) = 0;
 
 private:
+    CLinkedList<subscription_t> subscriptionList;
     subscription_t * m_pTable;
     size_t m_maxEntries;
     size_t m_subscriptionCtr;
+//    StaticSemaphore_t xSemaphoreBuffer;
+    SemaphoreHandle_t xSemaphore;
 };
 
 class CSubscribeEXTI
     : public CSubscribeBase
 {
 public:
-    CSubscribeEXTI(subscription_t * pTable, size_t maxEntries);
+    CSubscribeEXTI(void * pTable, size_t maxEntries);
     ~CSubscribeEXTI() = default;
 
 private:
