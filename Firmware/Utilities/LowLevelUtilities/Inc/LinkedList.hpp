@@ -456,23 +456,30 @@ void CLinkedList<MyType>::flushNode(node_t * pNode)
     }
 }
 
-/**\brief   Finds last active node and returns address
+/**\brief   Finds the active node at the given ID and returns address
  *
- * \param   None
+ * \param   nodeID  - index of node to find
  *
- * \return  pointer to last node
+ * \return  pointer to node
  */
 template <class MyType>
-inline void * CLinkedList<MyType>::findLast(void)
+inline void * CLinkedList<MyType>::findNode(uint32_t nodeID)
 {
-    node_t * pLast = m_pHead;
+    node_t * node = m_pHead;
 
-    while (nullptr != pLast->m_pNext)                                           /* Traverse to the last node */
+    for(auto i = 0u; i <= nodeID; ++i)
     {
-        pLast = pLast->m_pNext;
+        if(nullptr != node->m_pNext)
+        {
+            node = node->m_pNext;
+        }
+        else
+        {
+            break;
+        }
     }
 
-    return (void *)pLast;
+    return (void *)node;
 }
 
 #endif /* LINKEDLIST_HPP */
