@@ -77,11 +77,13 @@ public:
     int32_t pushToBack(MyType * pData);
     int32_t pushAfter(node_t * pPrevNode, MyType * pData);
     int32_t peak(node_t ** ppNode, MyType * pData);
+    int32_t peakFromNode(uint32_t nodeID, MyType * pData);
     size_t countNodes(void);
     size_t getMaxNodes(void);
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
     bool DeleteNodeAtGivenIdx(size_t idx);
+    int32_t popFromNode(uint32_t nodeID, MyType * pData);
     void * findNode(uint32_t nodeID);
 
 private:
@@ -226,6 +228,29 @@ template <class MyType>
     return returnVal;
 }
 
+
+/**\brief   Peaks at node specified in nodeID
+ *
+ * \param   nodeID  - node ID to check, 0 is head
+ * \param   pData   - pointer to where to write the data to
+ *
+ * \return  LL_SUCCESS on peak, else returns node ID of last node in chain
+ */
+template <class MyType>
+inline int32_t CLinkedList<MyType>::peakFromNode(uint32_t nodeID, MyType * pData)
+{
+    int32_t returnVal = LL_FAIL;
+    node_t * node = (node_t *)findNode(nodeID);
+    uint32_t i;
+
+    if (LL_SUCCESS == peak(&node, pData))
+    {
+        returnVal = (nodeID == i) ? LL_SUCCESS : i;
+    }
+
+    return returnVal;
+}
+
 /**\brief   Counts the number of elements in the list
  *
  * \param   None
@@ -312,31 +337,44 @@ inline int32_t CLinkedList<MyType>::popFromBack(MyType * pData)
     return returnVal;
 }
 
-/**\brief   Deletes node at given index position from head of list
- * From https://www.geeksforgeeks.org/delete-doubly-linked-list-node-given-position/
+/**\brief   Pop from specific node
  *
- * \param   idx             - index
+ * \param   nodeID  - node to read from, 0 is head
+ * \param   pData   - pointer to where to write the data to
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
-inline bool CLinkedList<MyType>::DeleteNodeAtGivenIdx(size_t idx)
+inline int32_t CLinkedList<MyType>::popFromNode(uint32_t nodeID, MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
 
-    /* if list in NULL or invalid position is given */
-    if ((nullptr != *m_pHead) && ((int32_t)idx <= (countNodes() - 1)))
+    if (LL_SUCCESS == peakFromNode(nodeID, pData))
     {
-        node_t * pDelete = m_pHead;
+        returnVal = deleteNode(nodeID);
+    }
 
-        /* traverse up to the node to delete at position 'idx' from head */
-        for (size_t i = 0; i < idx; ++i)
-        {
-            pDelete = pDelete->m_pNext;
-        }
+    return returnVal;
+}
 
-        /* delete the node pointed to by 'current' */
-        returnVal = deleteNode(pDelete);
+/**\brief   Deletes node at the given nodeID, this is the distance from head.
+ * From https://www.geeksforgeeks.org/delete-doubly-linked-list-node-given-position/
+ *
+ * \param   nodeID  - index of node to delete
+ *
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
+ */
+template <class MyType>
+inline bool CLinkedList<MyType>::deleteNode(size_t nodeID)
+{
+    int32_t returnVal = LL_FAIL;
+    int32_t activeNodeCount = countNodes();
+
+    /* if list in NULL or invalid position is given */
+    if ((nullptr != m_pHead) && ((int32_t)nodeID < activeNodeCount))
+    {
+        // traverse up to the node to find the pointer at nodeID and delete it
+        returnVal = removeNode((node_t *)findNode(activeNodeCount));
     }
 
     return returnVal;
