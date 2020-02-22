@@ -46,7 +46,7 @@ class CSubscribeDebounce
     : public CSubscribeBase
 {
 public:
-    CSubscribeDebounce(subscription_t * pTable, size_t maxEntries);
+    CSubscribeDebounce(void * pTable, size_t maxEntries);
     ~CSubscribeDebounce() = default;
 
 private:
@@ -59,7 +59,7 @@ class CDebounceTask
 public:
     CDebounceTask(osThreadDef_t OSThreadDef
                   , uint32_t period
-                  , CSubscribeDebounce::subscription_t * m_pSubscriptions
+                  , void * m_pSubscriptions
                   , size_t maxEntries);
     ~CDebounceTask(void) = default;
     void start(void);

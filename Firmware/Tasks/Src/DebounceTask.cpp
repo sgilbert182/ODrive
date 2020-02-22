@@ -57,7 +57,7 @@ FUNCTION DEFINITIONS
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeDebounce::CSubscribeDebounce(subscription_t * pTable, size_t maxEntries)
+CSubscribeDebounce::CSubscribeDebounce(void * pTable, size_t maxEntries)
     : CSubscribeBase(pTable, maxEntries)
 {}
 
@@ -94,7 +94,7 @@ void CSubscribeDebounce::unconfigureGPIO(subscription_t * subscription)
  * \return  None
  */
 CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period
-                             , CSubscribeDebounce::subscription_t * m_pSubscriptions
+                             , void * m_pSubscriptions
                              , size_t maxEntries)
     : m_OSThreadDef(OSThreadDef)
     , m_threadID(nullptr)
