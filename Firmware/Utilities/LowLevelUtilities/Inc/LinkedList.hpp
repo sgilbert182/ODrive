@@ -77,7 +77,7 @@ public:
     int32_t pushToBack(MyType * pData);
     int32_t pushAfter(node_t * pPrevNode, MyType * pData);
     int32_t peak(node_t ** ppRef, MyType * pData);
-    int32_t countNodes(void);
+    size_t countNodes(void);
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
     bool DeleteNodeAtGivenIdx(size_t idx);
@@ -232,9 +232,9 @@ template <class MyType>
  * \return  the number of nodes
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::countNodes(void)
+inline size_t CLinkedList<MyType>::countNodes(void)
 {
-    int32_t count = 0;
+    size_t count = 0;
     node_t * pLast = m_pHead;
 
     if (nullptr != pLast)
