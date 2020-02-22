@@ -76,7 +76,7 @@ public:
     int32_t pushToFront(MyType * pData);
     int32_t pushToBack(MyType * pData);
     int32_t pushAfter(node_t * pPrevNode, MyType * pData);
-    int32_t peak(node_t ** ppRef, MyType * pData);
+    int32_t peak(node_t ** ppNode, MyType * pData);
     size_t countNodes(void);
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
@@ -205,16 +205,16 @@ inline int32_t CLinkedList<MyType>::pushAfter(node_t * pPrevNode, MyType * pData
 
 /**\brief   Peaks at element
  *
- * \param   ppRef       - pointer to the list
- * \param   pData       - pointer to where to write the data to
+ * \param   ppNode  - pointer to the node to read from
+ * \param   pData   - pointer to where to write the data to
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
- inline int32_t CLinkedList<MyType>::peak(node_t ** ppRef, MyType * pData)
+ inline int32_t CLinkedList<MyType>::peak(node_t ** ppNode, MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * pNode = *ppRef;
+    node_t * pNode = *ppNode;
 
     if (nullptr != pNode)
     {
