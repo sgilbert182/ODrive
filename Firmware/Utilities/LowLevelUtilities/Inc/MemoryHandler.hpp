@@ -74,7 +74,7 @@ private:
         bool inUse;
     }slotDetails_t;
 
-    CMemoryTracker<slotDetails_t> m_table;
+    slotDetails_t * m_pTable;
     size_t m_slotSize;                                                          /* byte count of each element */
     uint32_t m_maxSlots;                                                        /* number of individual data segments that can be stored */
 };
@@ -92,7 +92,7 @@ INLINE FUNCTION DEFINITIONS
  */
 template <class storageType>
 CMemoryManager<storageType>::CMemoryManager(void * pMemory, size_t size)
-    : m_table(pMemory, size)
+    : m_pTable((slotDetails_t *)pMemory)
     , m_slotSize(sizeof(slotDetails_t))                                         /* byte count of each element */
     , m_maxSlots(size / sizeof(slotDetails_t))                                  /* number of individual data segments that can be stored */
 {};
@@ -111,7 +111,7 @@ storageType * CMemoryManager<storageType>::getBuffer(void)
 
     for (auto slotIndex = 0; slotIndex < m_maxSlots; ++slotIndex)
     {
-        slotDetails_t * pSlotDetails = &m_table[slotIndex];
+        slotDetails_t * pSlotDetails = &m_pTable[slotIndex];
         if (!pSlotDetails->inUse)
         {
             pSlotDetails->inUse = true;
@@ -135,7 +135,7 @@ void CMemoryManager<storageType>::releaseBuffer(storageType const * const pBuff)
 {
     for (auto slotIndex = 0; slotIndex < m_maxSlots; ++slotIndex)
     {
-        slotDetails_t * slotDetailsPtr = &m_table[slotIndex];
+        slotDetails_t * slotDetailsPtr = &m_pTable[slotIndex];
 
         if (pBuff == &slotDetailsPtr->data)                                     /* if slot pointer matches buffer pointer */
         {
