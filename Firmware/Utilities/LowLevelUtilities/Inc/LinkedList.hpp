@@ -21,6 +21,7 @@ INCLUDES
 #include "stddef.h"
 #include "stdint.h"
 #include "MemoryHandler.hpp"
+#include "string.h"
 
 /*******************************************************************************
 DEFINITIONS
