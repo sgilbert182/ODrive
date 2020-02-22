@@ -82,14 +82,15 @@ public:
     size_t getMaxNodes(void);
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
-    bool DeleteNodeAtGivenIdx(size_t idx);
     int32_t popFromNode(uint32_t nodeID, MyType * pData);
+    bool deleteNode(size_t nodeID);
     void * findNode(uint32_t nodeID);
 
 private:
     void populateNode(MyType * pData, node_t * pCurrent, node_t * pNext, node_t * pPrevious);
     void flushNode(node_t * pNode);
-    bool deleteNode(node_t * pDelete);
+
+    bool removeNode(node_t * pDelete);
 
 private:
     CMemoryManager<node_t> m_table;                                            /* pointer to the data storage table */
@@ -388,7 +389,7 @@ inline bool CLinkedList<MyType>::deleteNode(size_t nodeID)
  * \return  bool
  */
 template <class MyType>
-inline bool CLinkedList<MyType>::deleteNode(node_t * pDelete)
+inline bool CLinkedList<MyType>::removeNode(node_t * pDelete)
 {
     int32_t returnVal = LL_FAIL;
     /* base case */
