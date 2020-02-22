@@ -71,7 +71,7 @@ class CLinkedList
 using node_t = CNode<MyType>;
 
 public:
-    CLinkedList(node_t * pTable = nullptr, size_t size = 0);
+    CLinkedList(void * pTable = nullptr, size_t size = 0);
     ~CLinkedList() = default;
     int32_t pushToFront(MyType * pData);
     int32_t pushToBack(MyType * pData);
@@ -106,8 +106,8 @@ INLINE FUNCTION DEFINITIONS
  * \return  None
  */
 template <class MyType>
-inline CLinkedList<MyType>::CLinkedList(node_t * pTable, size_t size)
-    : m_table(pTable, size)
+inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
+    : m_table((node_t *)pTable, size)
     , m_length(0)
     , m_pHead(nullptr)
 {}
