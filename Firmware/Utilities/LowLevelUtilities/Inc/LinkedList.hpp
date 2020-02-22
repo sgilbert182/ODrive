@@ -89,7 +89,8 @@ public:
 private:
     void populateNode(MyType * pData, node_t * pCurrent, node_t * pNext, node_t * pPrevious);
     void flushNode(node_t * pNode);
-    bool deleteNode(node_t * pDelete);
+
+    bool removeNode(node_t * pDelete);
 
 private:
     CMemoryManager<node_t> m_table;                                            /* pointer to the data storage table */
@@ -388,7 +389,7 @@ inline bool CLinkedList<MyType>::deleteNode(size_t nodeID)
  * \return  bool
  */
 template <class MyType>
-inline bool CLinkedList<MyType>::deleteNode(node_t * pDelete)
+inline bool CLinkedList<MyType>::removeNode(node_t * pDelete)
 {
     int32_t returnVal = LL_FAIL;
     /* base case */
