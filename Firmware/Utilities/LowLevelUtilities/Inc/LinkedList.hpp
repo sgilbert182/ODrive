@@ -120,7 +120,7 @@ inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
  * \param   ppHeadRef   - pointer to the list
  * \param   pData       - pointer to the data to store
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
 inline int32_t CLinkedList<MyType>::pushToFront(MyType * pData)
@@ -150,17 +150,17 @@ inline int32_t CLinkedList<MyType>::pushToFront(MyType * pData)
  *
  * \param   pData   - pointer to the data to store
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
 inline int32_t CLinkedList<MyType>::pushToBack(MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * newNode = m_table.getBuffer();                                   /* allocate node */
+    node_t * newNode = m_table.getBuffer();                                     /* allocate node */
 
     if (nullptr != newNode)
     {
-        node_t * last = (node_t *)findLast();
+        node_t * last = (node_t *)findNode(countNodes());
         last->m_pNext = newNode;                                                /* Change the next of last node */
 
         /* copy in the data  */
@@ -179,7 +179,7 @@ inline int32_t CLinkedList<MyType>::pushToBack(MyType * pData)
  * \param   pPrevNode   - pointer to node to insert after
  * \param   pData       - pointer to the data to store
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAILED
+ * \return  LL_SUCCESS on successful allocation else LL_FAILED
  */
 template <class MyType>
 inline int32_t CLinkedList<MyType>::pushAfter(node_t * pPrevNode, MyType * pData)
@@ -291,16 +291,16 @@ inline size_t CLinkedList<MyType>::getMaxNodes(void)
 
 /**\brief   Pop first element off the list
  *
- * \param   pData           - pointer to where to write the data to
+ * \param   pData   - pointer to where to write the data to
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
 inline int32_t CLinkedList<MyType>::popFromFront(MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
 
-    if (LL_SUCCESS == Peak(m_pHead, pData))
+    if (LL_SUCCESS == peak(m_pHead, pData))
     {
         node_t * pToDelete = m_pHead;
 
@@ -318,17 +318,17 @@ inline int32_t CLinkedList<MyType>::popFromFront(MyType * pData)
  *
  * \param   pData   - pointer to where to write the data to
  *
- * \return  LL_SUCCESS on LL_SUCCESSful allocation else LL_FAIL
+ * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
 inline int32_t CLinkedList<MyType>::popFromBack(MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * pLast = (node_t *)findLast();
+    node_t * pLast = (node_t *)findNode(countNodes());
 
     if (nullptr != pLast)
     {
-        if (LL_SUCCESS == Peak(pLast, pData))
+        if (LL_SUCCESS == peak(pLast, pData))
         {
             returnVal = deleteNode(pLast);
         }
