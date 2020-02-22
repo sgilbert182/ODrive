@@ -78,6 +78,7 @@ public:
     int32_t pushAfter(node_t * pPrevNode, MyType * pData);
     int32_t peak(node_t ** ppNode, MyType * pData);
     size_t countNodes(void);
+    size_t getMaxNodes(void);
     int32_t popFromFront(MyType * pData);
     int32_t popFromBack(MyType * pData);
     bool DeleteNodeAtGivenIdx(size_t idx);
@@ -248,6 +249,19 @@ inline size_t CLinkedList<MyType>::countNodes(void)
     }
 
     return count;
+}
+
+
+/**\brief   returns the maximum number of elements the list can hold
+ *
+ * \param   None
+ *
+ * \return  the maximum number of nodes
+ */
+template <class MyType>
+inline size_t CLinkedList<MyType>::getMaxNodes(void)
+{
+    return m_length;
 }
 
 /**\brief   Pop first element off the list
