@@ -17,6 +17,8 @@ INCLUDES
 
 #include "DebounceTask.hpp"
 #include "stm32f4xx_hal.h"
+#include "stm32f405xx.h"
+#include "stdint.h"
 
 /*******************************************************************************
 NAMESPACE
@@ -101,9 +103,7 @@ CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period
     , m_period(period)
     , GPIOData()
     , m_subscribedGPIOs(m_pSubscriptions, maxEntries)
-{
-
-}
+{}
 
 /**\brief   Registers a callback to the specified port and pin combination.
  *
@@ -156,12 +156,14 @@ void CDebounceTask::threadFunc(void * ctx)
  */
 void CDebounceTask::updateIOs(uint32_t subscribeCount)
 {
-    auto GPIOList = m_subscribedGPIOs.getSubscriptionList();
+    GPIO_TypeDef * GPIO_port = nullptr;
+    uint16_t pGPIO_pin = 0;
     uint32_t pinList = 0;
 
     for(auto i = 0u; i < subscribeCount; ++i)
     {
-        pinList |= (HAL_GPIO_ReadPin(GPIOList->GPIO_port, GPIOList->GPIO_InitStruct.Pin) << i);
+        m_subscribedGPIOs.getSubscriptionList(subscribeCount, GPIO_port, &pGPIO_pin);
+        pinList |= (HAL_GPIO_ReadPin(GPIO_port, pGPIO_pin) << i);
     }
 
     GPIOData.update(pinList);

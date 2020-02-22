@@ -73,16 +73,13 @@ public:
     callbackFuncPtr_t getCallback(uint32_t listID);
 
 private:
-    subscription_t * findActiveSubscription(GPIO_TypeDef* GPIO_port
+    int32_t findActiveSubscription(GPIO_TypeDef* GPIO_port
                                             , uint16_t GPIO_pin);
     virtual void configureGPIO(subscription_t * pSubscription) = 0;
     virtual void unconfigureGPIO(subscription_t * pSubscription) = 0;
 
 private:
     CLinkedList<subscription_t> subscriptionList;
-    subscription_t * m_pTable;
-    size_t m_maxEntries;
-    size_t m_subscriptionCtr;
 //    StaticSemaphore_t xSemaphoreBuffer;
     SemaphoreHandle_t xSemaphore;
 };
