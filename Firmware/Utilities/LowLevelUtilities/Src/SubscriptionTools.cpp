@@ -59,9 +59,6 @@ FUNCTION DEFINITIONS
  */
 CSubscribeBase::CSubscribeBase(void * pTable, size_t maxEntries)
     : subscriptionList(pTable, maxEntries)
-//    , m_pTable((subscription_t *)pTable)
-//    , m_maxEntries(maxEntries)
-//    , m_subscriptionCtr(0)
 {
     xSemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(xSemaphore);
