@@ -180,6 +180,10 @@ void CDebounceTask::checkDebouncedIOs(uint32_t subscribeCount)
 {
     for(auto i = 0u; i < subscribeCount; ++i)
     {
+        /* isAsserted() is true only when the IO (after debouncing) initially
+         * changes state. Will not be true again until the IO is first
+         * de-asserted.
+         */
         if(GPIOData.isAsserted(i))
         {
             callbackFuncPtr_t callback = m_subscribedGPIOs.getCallback(i);
