@@ -52,13 +52,13 @@ FUNCTION DEFINITIONS
 
 /**\brief   Constructor.
  *
- * \param   pTable      - pointer to the subscription table space
- * \param   maxEntries  - size of table space
+ * \param   pTable  - pointer to the subscription table space
+ * \param   size    - byte count of allocated memory
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeBase::CSubscribeBase(void * pTable, size_t maxEntries)
-    : subscriptionList(pTable, maxEntries)
+CSubscribeBase::CSubscribeBase(void * pTable, size_t size)
+    : subscriptionList(pTable, size)
 {
     xSemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(xSemaphore);
@@ -228,13 +228,13 @@ callbackFuncPtr_t CSubscribeBase::getCallback(uint32_t listID)
 
 /**\brief   Constructor.
  *
- * \param   pTable      - pointer to the subscription table space
- * \param   maxEntries  - size of table space
+ * \param   pTable  - pointer to the subscription table space
+ * \param   size    - byte count of allocated memory
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeEXTI::CSubscribeEXTI(void * pTable, size_t maxEntries)
-    : CSubscribeBase(pTable, maxEntries)
+CSubscribeEXTI::CSubscribeEXTI(void * pTable, size_t size)
+    : CSubscribeBase(pTable, size)
 {}
 
 /**\brief   Configures GPIO for external interrupt.

@@ -62,7 +62,7 @@ public:
     } subscription_t;
 
 public:
-    CSubscribeBase(void * m_pSubscriptions, size_t maxEntries);
+    CSubscribeBase(void * m_pSubscriptions, size_t size);
     virtual ~CSubscribeBase(void) = default;
     bool subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
                    uint32_t pull_up_down,
@@ -88,7 +88,7 @@ class CSubscribeEXTI
     : public CSubscribeBase
 {
 public:
-    CSubscribeEXTI(void * pTable, size_t maxEntries);
+    CSubscribeEXTI(void * pTable, size_t size);
     ~CSubscribeEXTI() = default;
 
 private:
