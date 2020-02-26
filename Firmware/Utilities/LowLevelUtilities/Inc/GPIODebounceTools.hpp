@@ -44,15 +44,17 @@ public:
     CGPIOData(void);
     ~CGPIOData(void) = default;
     void update(uint32_t newState);
-    uint32_t debounce(void);
-    bool isAsserted(uint32_t button);
-    bool anyAsserted(void);
+    void debounce(void);
+    bool isAsserted(uint32_t GPIOID);
+    bool isDeAsserted(uint32_t GPIOID);
+    bool GPIODebouncedState(uint32_t GPIOID);
+    uint32_t anyChangedState(void);
 
 private:
     uint32_t m_stateArray[DEBOUNCEWINDOW];
     CCBBuffer<uint32_t> m_stateCB;
     uint32_t m_state;
-
+    uint32_t m_changed;
 };
 
 /*******************************************************************************

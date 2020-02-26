@@ -54,6 +54,7 @@ FUNCTION IMPLEMENTATIONS
 CGPIOData::CGPIOData(void)
     : m_stateCB(m_stateArray, ARRAY_LEN(m_stateArray), false, true)
     , m_state(0)
+    , m_changed(0)
 {
 
 }
@@ -67,45 +68,76 @@ CGPIOData::CGPIOData(void)
 void CGPIOData::update(uint32_t newState)
 {
     m_stateCB.write(newState);
-    m_state = debounce();
+    debounce();
 }
 
-/**\brief   GPIO de-bounce task
+/**\brief   calculates all de-bounced GPIO states
  *
  * \param   None
  *
- * \return  returns all de-bounced GPIO states
+ * \return  None
  */
-uint32_t CGPIOData::debounce(void)
+void CGPIOData::debounce(void)
 {
-    uint32_t returnVal = 0xffff;
+    uint32_t debouncedState = 0xffff;
+    uint32_t lastDebouncedState = m_state;
 
+    /* calculate debounced states for all IOs, if there is a constant stream of
+     * ones or zeros, the io has debounced.
+     */
     for(auto i = 0u; i < ARRAY_LEN(m_stateArray); ++i)
     {
-        returnVal &= m_stateArray[i];
+        debouncedState &= m_stateArray[i];
     }
 
-    return returnVal;
+    /* Calculate what changed. If the IO was high and is now low, XOR'ing 1 and
+     * 0 produces a 1. If the IO was low and is now high, XOR'ing 0 and 1
+     * also produces a 1. Otherwise, it is 0
+     */
+    m_changed = debouncedState ^ lastDebouncedState;
+    m_state = debouncedState;
 }
 
-/**\brief   Has selected GPIO been asserted
+/**\brief   Calculates if the selected GPIO has changed state and been asserted
  *
  * \param   GPIOID  - GPIO to be checked
  *
- * \return  returns true if the selected GPIO has been pressed
+ * \return  returns true if the selected debounced GPIO has an edge transition
  */
 bool CGPIOData::isAsserted(uint32_t GPIOID)
 {
-    return (0u < (m_state & GPIOID));
+    return ((m_changed & m_state) & GPIOID);
 }
 
-/**\brief   Has any GPIO been asserted
+/**\brief   Calculates if the selected GPIO has changed state and been deasserted
+ *
+ * \param   GPIOID  - GPIO to be checked
+ *
+ * \return  returns true if the selected debounced GPIO has an edge transition
+ */
+bool CGPIOData::isDeAsserted(uint32_t GPIOID)
+{
+    return ((m_changed & ~m_state) & GPIOID);
+}
+
+/**\brief   Returns the current IO state
+ *
+ * \param   GPIOID  - GPIO to be checked
+ *
+ * \return  returns true if the selected GPIO has been asserted
+ */
+bool CGPIOData::GPIODebouncedState(uint32_t GPIOID)
+{
+    return (m_state & GPIOID);
+}
+
+/**\brief   Has any GPIO changed state
  *
  * \param   None
  *
- * \return  returns true if any GPIO has been pressed
+ * \return  returns 1 in the bit field if any GPIO that has changed state
  */
-bool CGPIOData::anyAsserted(void)
+uint32_t CGPIOData::anyChangedState(void)
 {
-    return (0u < (m_state & 0xffff));
+    return m_changed;
 }
