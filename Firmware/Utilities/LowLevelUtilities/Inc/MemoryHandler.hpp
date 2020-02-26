@@ -86,7 +86,7 @@ INLINE FUNCTION DEFINITIONS
 /**\brief   Constructor.
  *
  * \param   pMemory - pointer to memory to dynamic allocate
- * \param   size    - byte count of allocated memory.
+ * \param   size    - byte count of allocated memory
  *
  * \return  None
  */

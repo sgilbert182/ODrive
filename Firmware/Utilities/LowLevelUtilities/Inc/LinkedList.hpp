@@ -105,7 +105,7 @@ INLINE FUNCTION DEFINITIONS
 /**\brief   Constructor
  *
  * \param   pTable  - pointer to memory space to be used to store link list
- * \param   size    - number of elements table can store
+ * \param   size    - byte count of allocated memory
  *
  * \return  None
  */
