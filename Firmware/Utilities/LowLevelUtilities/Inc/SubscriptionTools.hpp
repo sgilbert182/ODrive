@@ -68,7 +68,7 @@ public:
                    uint32_t pull_up_down,
                    callbackFuncPtr_t callback, void * ctx);
     void unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
-    bool getSubscriptionList(uint32_t tableID, GPIO_TypeDef * GPIO_port, uint16_t * GPIO_pin);
+    bool getSubscriptionList(uint32_t tableID, GPIO_TypeDef ** GPIO_port, uint16_t * GPIO_pin);
     size_t getSubscriptionCount(void);
     callbackFuncPtr_t getCallback(uint32_t listID);
 

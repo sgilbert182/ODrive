@@ -193,12 +193,12 @@ void CSubscribeBase::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
  *
  * \return  None
  */
-bool CSubscribeBase::getSubscriptionList(uint32_t tableID, GPIO_TypeDef * GPIO_port, uint16_t * GPIO_pin)
+bool CSubscribeBase::getSubscriptionList(uint32_t tableID, GPIO_TypeDef ** GPIO_port, uint16_t * GPIO_pin)
 {
     subscription_t subscription;
 
-    subscriptionList.peakFromNode(tableID, &subscription);
-    GPIO_port = subscription.GPIO_port;
+    subscriptionList.peakFromNode((tableID -1), &subscription);
+    *GPIO_port = subscription.GPIO_port;
     *GPIO_pin = subscription.GPIO_InitStruct.Pin;
 
     return true;
