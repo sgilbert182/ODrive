@@ -26,6 +26,8 @@ INCLUDES
 DEFINITIONS
 *******************************************************************************/
 
+#define DBTASKFREQUENCY_MS    (1)
+
 /*******************************************************************************
 TYPES
 *******************************************************************************/
@@ -58,9 +60,7 @@ class CDebounceTask
 {
 public:
     CDebounceTask(osThreadDef_t OSThreadDef
-                  , uint32_t period
-                  , void * m_pSubscriptions
-                  , size_t maxEntries);
+                  , uint32_t period);
     ~CDebounceTask(void) = default;
     void start(void);
     void threadFunc(void * ctx);
@@ -79,7 +79,7 @@ private:
 private:
     osThreadDef_t m_OSThreadDef;
     osThreadId m_threadID;
-    uint32_t m_period;
+    uint32_t m_periodMS;
     CGPIOData GPIOData;
     CSubscribeDebounce m_subscribedGPIOs;
 };

@@ -28,6 +28,8 @@ NAMESPACE
 DEFINITIONS
 *******************************************************************************/
 
+#define DEBOUNCE_TIME_MS (10)
+
 /*******************************************************************************
 TYPES
 *******************************************************************************/
@@ -43,6 +45,9 @@ GLOBAL VARIABLES
 /*******************************************************************************
 MODULE VARIABLES
 *******************************************************************************/
+
+uint8_t subscriptionTable[(sizeof(CNode<CSubscribeDebounce::subscription_t>) + sizeof(bool))]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time.
+uint32_t debounceTable[DEBOUNCE_TIME_MS * DBTASKFREQUENCY_MS];                  //  x debounce stabilisiation period x task frequency
 
 /*******************************************************************************
 MODULE FUNCTION DECLARATIONS
@@ -96,14 +101,12 @@ void CSubscribeDebounce::unconfigureGPIO(subscription_t * pSubscription)
  *
  * \return  None
  */
-CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period
-                             , void * m_pSubscriptions
-                             , size_t maxEntries)
+CDebounceTask::CDebounceTask(osThreadDef_t OSThreadDef, uint32_t period)
     : m_OSThreadDef(OSThreadDef)
     , m_threadID(nullptr)
-    , m_period(period)
-    , GPIOData()
-    , m_subscribedGPIOs(m_pSubscriptions, maxEntries)
+    , m_periodMS(period)
+    , GPIOData(debounceTable, sizeof(debounceTable))
+    , m_subscribedGPIOs(subscriptionTable, sizeof(subscriptionTable))
 {}
 
 /**\brief   Registers a callback to the specified port and pin combination.
@@ -144,7 +147,7 @@ void CDebounceTask::threadFunc(void * ctx)
         auto subscribeCount = m_subscribedGPIOs.getSubscriptionCount();
         updateIOs(subscribeCount);
         checkDebouncedIOs(subscribeCount);
-        osDelay(m_period);
+        osDelay(m_periodMS);
     }
 }
 
