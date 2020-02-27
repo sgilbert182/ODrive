@@ -163,7 +163,7 @@ void CDebounceTask::updateIOs(uint32_t subscribeCount)
 
     for(auto i = 0u; i < subscribeCount; ++i)
     {
-        m_subscribedGPIOs.getSubscriptionList(subscribeCount, GPIO_port, &pGPIO_pin);
+        m_subscribedGPIOs.getSubscriptionList(i, &GPIO_port, &pGPIO_pin);
         pinList |= (HAL_GPIO_ReadPin(GPIO_port, pGPIO_pin) << i);
     }
 
