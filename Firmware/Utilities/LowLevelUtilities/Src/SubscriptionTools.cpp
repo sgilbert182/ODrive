@@ -131,10 +131,12 @@ bool CSubscribeBase::subscribe(GPIO_TypeDef * GPIO_port
         // check for space in the list
         if (subscriptionList.countNodes() < subscriptionList.getMaxNodes())
         {
-            subscriptionList.pushToBack(&subscription);
+            if(LL_SUCCESS == subscriptionList.pushToBack(&subscription))
+            {
+                configureGPIO(&subscription);
+                returnVal = true;
+            }
         }
-        configureGPIO(&subscription);
-        returnVal = true;
 
         xSemaphoreGive(xSemaphore);
     }
