@@ -44,12 +44,16 @@ GLOBAL VARIABLES
 CONSTANTS
 *******************************************************************************/
 
+
+/* stack size is number of 32 bit words taken from the RTOS heap currently set
+ * to 65536 in cubeMX
+ */
 constexpr taskStruct_t cmd_parse        {"CMDParser",           8096, osPriorityNormal};
 constexpr taskStruct_t UART_server      {"UARTServer",          1024, osPriorityNormal};
 constexpr taskStruct_t USB_server       {"USBServer",           1024, osPriorityNormal};
 constexpr taskStruct_t Axis_thread      {"AxisServer",          2048, osPriorityNormal};
 constexpr taskStruct_t Analog_server    {"AnalogServer",        2048, osPriorityLow};
-constexpr taskStruct_t DebounceTask     {"DebounceTask",        2048, osPriorityNormal};
+constexpr taskStruct_t DebounceTask     {"DebounceTask",        128, osPriorityNormal};
 
 /*******************************************************************************
 NAMESPACE
