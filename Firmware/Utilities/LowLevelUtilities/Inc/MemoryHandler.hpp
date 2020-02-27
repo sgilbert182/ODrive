@@ -51,6 +51,7 @@ public:
     storageType * getBuffer(void);
     void releaseBuffer(storageType const * const pBuff);
     size_t getMaxSlotCount(void);
+    size_t getSlotSize(void);
 
 private:
     size_t m_slotSize;                                                          /* byte count of each element */
@@ -133,6 +134,18 @@ template <class storageType>
 size_t CMemoryManager<storageType>::getMaxSlotCount(void)
 {
     return m_maxSlots;
+}
+
+/**\brief   Returns byte count for a single slot
+ *
+ * \param   None
+ *
+ * \return  byte count
+ */
+template <class storageType>
+size_t CMemoryManager<storageType>::getSlotSize(void)
+{
+    return m_slotSize;
 }
 
 #endif /* MEMORYHANDLER_HPP */
