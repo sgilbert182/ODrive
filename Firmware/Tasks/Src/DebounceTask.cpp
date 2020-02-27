@@ -185,7 +185,7 @@ void CDebounceTask::checkDebouncedIOs(uint32_t subscribeCount)
          * changes state. Will not be true again until the IO is first
          * de-asserted.
          */
-        if(GPIOData.isAsserted(i))
+        if(GPIOData.isAsserted((i + 1)))
         {
             callbackFuncPtr_t callback = m_subscribedGPIOs.getCallback(i);
             if(callback)
