@@ -24,8 +24,6 @@ INCLUDES
 DEFINITIONS
 *******************************************************************************/
 
-constexpr uint32_t DEBOUNCEWINDOW = 10;
-
 /*******************************************************************************
 TYPES
 *******************************************************************************/
@@ -41,7 +39,7 @@ NAMESPACE
 class CGPIOData
 {
 public:
-    CGPIOData(void);
+    CGPIOData(uint32_t * pStateTable, size_t size);
     ~CGPIOData(void) = default;
     void update(uint32_t newState);
     void debounce(void);
@@ -51,8 +49,9 @@ public:
     uint32_t anyChangedState(void);
 
 private:
-    uint32_t m_stateArray[DEBOUNCEWINDOW];
     CCBBuffer<uint32_t> m_stateCB;
+    uint32_t * m_pStateTable;
+    size_t m_debounceWindow;
     uint32_t m_state;
     uint32_t m_changed;
 };

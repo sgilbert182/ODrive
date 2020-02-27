@@ -47,12 +47,15 @@ FUNCTION IMPLEMENTATIONS
 
 /**\brief   Constructor
  *
- * \param   None
+ * \param   pStateTable - pointer to table memory
+ * \param   size        - byte count of table
  *
  * \return  None
  */
-CGPIOData::CGPIOData(void)
-    : m_stateCB(m_stateArray, ARRAY_LEN(m_stateArray), false, true)
+CGPIOData::CGPIOData(uint32_t * pStateTable, size_t size)
+    : m_stateCB(pStateTable, size / sizeof(uint32_t), false, true)
+    , m_pStateTable(pStateTable)
+    , m_debounceWindow(size / sizeof(uint32_t))
     , m_state(0)
     , m_changed(0)
 {
@@ -85,9 +88,9 @@ void CGPIOData::debounce(void)
     /* calculate debounced states for all IOs, if there is a constant stream of
      * ones or zeros, the io has debounced.
      */
-    for(auto i = 0u; i < ARRAY_LEN(m_stateArray); ++i)
+    for(auto i = 0u; i < m_debounceWindow; ++i)
     {
-        debouncedState &= m_stateArray[i];
+        debouncedState &= m_pStateTable[i];
     }
 
     /* Calculate what changed. If the IO was high and is now low, XOR'ing 1 and
