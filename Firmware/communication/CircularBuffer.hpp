@@ -200,7 +200,7 @@ size_t CCBBuffer<dataType_t>::remainingSpaceLinear(void)
  * and start index. If start is less than end index, then data does from end
  * index to numElements of array and start of array to start index.
  */
-    if (!isFull())
+    if ((m_overwriteOldData) || !isFull())
     {
         length = (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.start : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
     }
