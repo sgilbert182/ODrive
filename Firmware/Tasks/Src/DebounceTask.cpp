@@ -69,12 +69,13 @@ CSubscribeDebounce::CSubscribeDebounce(void * pTable, size_t maxEntries)
  *
  * \return  None
  */
-void CSubscribeDebounce::configureGPIO(subscription_t * subscription)
+void CSubscribeDebounce::configureGPIO(subscription_t * pSubscription)
 {
     // Set up GPIO
-    HAL_GPIO_Init(subscription->GPIO_port, &subscription->GPIO_InitStruct);
+    HAL_GPIO_DeInit(pSubscription->GPIO_port, pSubscription->GPIO_InitStruct.Pin);
+    HAL_GPIO_Init(pSubscription->GPIO_port, &pSubscription->GPIO_InitStruct);
     // Clear any previous triggers
-    __HAL_GPIO_EXTI_CLEAR_IT(subscription->GPIO_InitStruct.Pin);
+    __HAL_GPIO_EXTI_CLEAR_IT(pSubscription->GPIO_InitStruct.Pin);
 }
 
 /**\brief   Removes the pin from the debounce list.
@@ -83,9 +84,9 @@ void CSubscribeDebounce::configureGPIO(subscription_t * subscription)
  *
  * \return  None
  */
-void CSubscribeDebounce::unconfigureGPIO(subscription_t * subscription)
+void CSubscribeDebounce::unconfigureGPIO(subscription_t * pSubscription)
 {
-
+    HAL_GPIO_DeInit(pSubscription->GPIO_port, pSubscription->GPIO_InitStruct.Pin);
 }
 
 /**\brief   Constructor.
