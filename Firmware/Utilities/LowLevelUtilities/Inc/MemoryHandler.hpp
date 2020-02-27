@@ -43,21 +43,6 @@ NAMESPACE
 *******************************************************************************/
 
 template <class storageType>
-class CMemoryTracker
-{
-public:
-    CMemoryTracker(void * pTable, size_t size)
-    : m_pTable((storageType *)pTable)
-    , m_size(size)
-{}
-    ~CMemoryTracker() = default;
-
-private:
-    storageType * m_pTable;                                                     /* pool of memory */
-    size_t m_size;
-};
-
-template <class storageType>
 class CMemoryManager
 {
 public:
@@ -68,13 +53,6 @@ public:
     size_t getMaxSlotCount(void);
 
 private:
-    typedef struct
-    {
-        storageType data;
-        bool inUse;
-    }slotDetails_t;
-
-    slotDetails_t * m_pTable;
     size_t m_slotSize;                                                          /* byte count of each element */
     uint32_t m_maxSlots;                                                        /* number of individual data segments that can be stored */
 };
