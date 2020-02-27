@@ -50,8 +50,8 @@ public:
     ~CSubscribeDebounce() = default;
 
 private:
-    void configureGPIO(subscription_t * subscription) override;
-    void unconfigureGPIO(subscription_t * subscription) override;
+    void configureGPIO(subscription_t * pSubscription) override;
+    void unconfigureGPIO(subscription_t * pSubscription) override;
 };
 
 class CDebounceTask
