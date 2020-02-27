@@ -17,10 +17,8 @@ INCLUDES
 
 #include "interface_uart.h"
 #include "ascii_protocol.hpp"
-#include "CircularBuffer.hpp"
 #include <MotorControl/utils.h>
 #include <fibre/protocol.hpp>
-#include <usart.h>
 #include <cmsis_os.h>
 #include <freertos_vars.h>
 
@@ -34,9 +32,6 @@ NAMESPACE
 DEFINITIONS
 *******************************************************************************/
 
-#define UART_TX_BUFFER_SIZE 64
-#define UART_RX_BUFFER_SIZE 64
-
 /*******************************************************************************
 TYPES
 *******************************************************************************/
@@ -45,18 +40,21 @@ TYPES
 GLOBAL VARIABLES
 *******************************************************************************/
 
+// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
+osThreadId uart_thread;
+
 /*******************************************************************************
 MODULE VARIABLES
 *******************************************************************************/
 
-// DMA open loop continuous circular buffer
-static uint8_t dma_rx_buffer[2];
-
 static uint8_t RXBuffer[UART_RX_BUFFER_SIZE];
-CCBBuffer<uint8_t> CRXCircularBuffer(RXBuffer, sizeof(RXBuffer), false, false);
+static CCBBuffer<uint8_t> RXCircularBuffer(RXBuffer, sizeof(RXBuffer), false, false);
 
-// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-osThreadId uart_thread;
+UARTSender uart4_stream_output(&huart4);
+StreamSink * uart4_stream_output_ptr = &uart4_stream_output;
+StreamBasedPacketSink uart4_packet_output(uart4_stream_output);
+BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
+StreamToPacketSegmenter uart4_stream_input(uart4_channel);
 
 /*******************************************************************************
 INTERNAL FUNCTION DEFINTIONS
@@ -66,52 +64,70 @@ INTERNAL FUNCTION DEFINTIONS
 FUNCTION DECLARATIONS
 *******************************************************************************/
 
-class UARTSender
-    : public StreamSink
+/**\brief   sends processed bytes back out on the serial port.
+ *
+ * \param   buffer              - pointer to the data to write to the circular buffer
+ * \param   length              - number of characters to store
+ * \param   processed_bytes     - pointer to the variable that reports the number
+ *                              of processed bytes
+ *
+ * \return  None
+ */
+int UARTSender::process_bytes(const uint8_t * buffer, size_t length, size_t * processed_bytes)
 {
-public:
-    UART4Sender()
-    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes)
+    auto written = 0u;
+
+    while (written < length)
     {
-        // Loop to ensure all bytes get sent
-        while (length)
+        written += TXCircularBuffer.write(buffer, length);
+        if(nullptr != processed_bytes)
         {
-            size_t chunk = (length < UART_TX_BUFFER_SIZE) ? length : UART_TX_BUFFER_SIZE;
-            // wait for USB interface to become ready
-            // TODO: implement ring buffer to get a more continuous stream of data
-            // if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
-            if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
-                return -1;
-			// transmit chunk
-            if (HAL_UART_Transmit_DMA(&huart4, (uint8_t *)memcpy(tx_buf_, buffer, chunk), chunk) != HAL_OK)
-                return -1;
-            buffer += chunk;
-            length -= chunk;
-            if (processed_bytes)
-                *processed_bytes += chunk;
+            *processed_bytes = written;
         }
-        return 0;
+        // Loop to ensure all bytes get sent
+        while (!TXCircularBuffer.isEmpty())
+        {
+            if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
+            {
+                return -1;
+            }
+            else
+            {
+                // transmit chunk
+                if (HAL_UART_Transmit_DMA(m_pHuart, tx_buf_, TXCircularBuffer.read(tx_buf_, sizeof(tx_buf_))) != HAL_OK)
+                {
+                    return -1;
+                }
+            }
+        }
     }
 
-    size_t get_free_space() { return SIZE_MAX; }
-private:
-    uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
-    uint8_t TXBuffer[UART_TX_BUFFER_SIZE];
-    CCBBuffer<uint8_t> CTXCircularBuffer;
-} uart4_stream_output;
+    return 0;
+}
 
-UARTSender uart4_stream_output(&huart4);
-StreamSink * uart4_stream_output_ptr = &uart4_stream_output;
-StreamBasedPacketSink uart4_packet_output(uart4_stream_output);
-BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
-StreamToPacketSegmenter uart4_stream_input(uart4_channel);
+/**\brief   gets amount of free space in buffer.
+ *
+ * \param   None
+ *
+ * \return  byte count of free space
+ */
+size_t UARTSender::get_free_space(void)
+{
+    return TXCircularBuffer.remainingSpace();
+}
 
+/**\brief   UART handle task.
+ *
+ * \param   ctx - not used
+ *
+ * \return  None
+ */
 static void uart_server_thread(void * ctx) {
     (void) ctx;
 
     for (;;) {
         uint8_t RXData[UART_RX_BUFFER_SIZE] = {0};
-        size_t length = CRXCircularBuffer.read(RXData, sizeof(RXData));
+        size_t length = RXCircularBuffer.read(RXData, sizeof(RXData));
 
         uart4_stream_input.process_bytes(RXData, length, nullptr); // TODO: use process_all
         ASCII_protocol_parse_stream(RXData, length, uart4_stream_output);
@@ -120,11 +136,19 @@ static void uart_server_thread(void * ctx) {
     };
 }
 
-void start_uart_server() {
-    // DMA is set up to recieve in a circular buffer forever.
-    // We dont use interrupts to fetch the data directly, DMA transfers the data into a 
-	// circular buffer and signals the uart task to deal with the data. Data is then 
-	// taken out of the circular buffer into a parse buffer, controlled by a state machine
+/**\brief   starts the UART handle task and associated peripherals.
+ *
+ * \param   None
+ *
+ * \return  None
+ */
+void start_uart_server(void) {
+    // DMA is set up to receive in a circular buffer forever.
+    // We don't use interrupts to fetch the data directly, DMA transfers the data into a
+    // circular buffer and signals the uart task to deal with the data. Data is then
+    // taken out of the circular buffer into a parse buffer, controlled by a state machine
+
+    static uint8_t dma_rx_buffer[2];
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
 
     const osThreadDef_t os_thread_def_UART_server = {
@@ -147,8 +171,8 @@ void start_uart_server() {
   */
  void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     if(&huart4 == huart) {
-        HAL_UART_AbortReceive(&huart4);
-        HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
+        HAL_UART_AbortReceive(huart);
+        HAL_UART_Receive_DMA(huart, huart->pTxBuffPtr, huart->TxXferSize);
     }
 }
 
@@ -172,7 +196,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
   */
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
     if(&huart4 == huart) {
-        CRXCircularBuffer.write(&huart->pRxBuffPtr[0], 1);
+        RXCircularBuffer.write(&huart->pRxBuffPtr[0], 1);
         osThreadResume(uart_thread);
     }
 }
@@ -185,7 +209,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
   */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if(&huart4 == huart) {
-        CRXCircularBuffer.write(&huart->pRxBuffPtr[1], 1);
+        RXCircularBuffer.write(&huart->pRxBuffPtr[1], 1);
         osThreadResume(uart_thread);
     }
 }
