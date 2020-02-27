@@ -248,6 +248,7 @@ CSubscribeEXTI::CSubscribeEXTI(void * pTable, size_t size)
 void CSubscribeEXTI::configureGPIO(subscription_t * pSubscription)
 {
     // Set up GPIO
+    HAL_GPIO_DeInit(pSubscription->GPIO_port, pSubscription->GPIO_InitStruct.Pin);
     HAL_GPIO_Init(pSubscription->GPIO_port, &pSubscription->GPIO_InitStruct);
     // Clear any previous triggers
     __HAL_GPIO_EXTI_CLEAR_IT(pSubscription->GPIO_InitStruct.Pin);
