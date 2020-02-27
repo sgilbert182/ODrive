@@ -21,6 +21,7 @@ INCLUDES
 
 #include "stdint.h"
 #include "stddef.h"
+#include "string.h"
 
 /*******************************************************************************
 DEFINITIONS
@@ -49,13 +50,16 @@ public:
     CMemoryManager(void * pMemory, size_t size);
     ~CMemoryManager() = default;
     storageType * getBuffer(void);
-    void releaseBuffer(storageType const * const pBuff);
-    size_t getMaxSlotCount(void);
+    void releaseBuffer(storageType * const pBuff);
+    size_t getMaxSlots(void);
     size_t getSlotSize(void);
 
 private:
+    void * m_pTable;
     size_t m_slotSize;                                                          /* byte count of each element */
     uint32_t m_maxSlots;                                                        /* number of individual data segments that can be stored */
+    storageType * m_data;
+    bool * m_inUse;
 };
 
 /*******************************************************************************
@@ -65,16 +69,20 @@ INLINE FUNCTION DEFINITIONS
 /**\brief   Constructor.
  *
  * \param   pMemory - pointer to memory to dynamic allocate
- * \param   size    - byte count of allocated memory
+ * \param   size    - byte count of allocated memory.
  *
  * \return  None
  */
 template <class storageType>
 CMemoryManager<storageType>::CMemoryManager(void * pMemory, size_t size)
-    : m_pTable((slotDetails_t *)pMemory)
-    , m_slotSize(sizeof(slotDetails_t))                                         /* byte count of each element */
-    , m_maxSlots(size / sizeof(slotDetails_t))                                  /* number of individual data segments that can be stored */
-{};
+    : m_pTable(pMemory)
+    , m_slotSize(sizeof(storageType))                                           /* byte count of each element */
+    , m_maxSlots(size / (m_slotSize + sizeof(bool)))                            /* number of individual data segments that can be stored */
+    , m_data((storageType *)m_pTable)
+    , m_inUse((bool *)&m_data[m_maxSlots])
+{
+    memset(this->m_pTable, 0, size);
+};
 
 /**\brief   Get a pointer to the memory slot
  *
@@ -90,11 +98,10 @@ storageType * CMemoryManager<storageType>::getBuffer(void)
 
     for (auto slotIndex = 0u; slotIndex < m_maxSlots; ++slotIndex)
     {
-        slotDetails_t * pSlotDetails = &m_pTable[slotIndex];
-        if (!pSlotDetails->inUse)
+        if(true != m_inUse[slotIndex])
         {
-            pSlotDetails->inUse = true;
-            returnVal = &pSlotDetails->data;
+            m_inUse[slotIndex] = true;
+            returnVal = &m_data[slotIndex];
             break;
         }
     }
@@ -110,15 +117,14 @@ storageType * CMemoryManager<storageType>::getBuffer(void)
  * \return  None
  */
 template <class storageType>
-void CMemoryManager<storageType>::releaseBuffer(storageType const * const pBuff)
+void CMemoryManager<storageType>::releaseBuffer(storageType * const pBuff)
 {
     for (auto slotIndex = 0u; slotIndex < m_maxSlots; ++slotIndex)
     {
-        slotDetails_t * slotDetailsPtr = &m_pTable[slotIndex];
-
-        if (pBuff == &slotDetailsPtr->data)                                     /* if slot pointer matches buffer pointer */
+        if(pBuff == &m_data[slotIndex])
         {
-            slotDetailsPtr->inUse = false;                                      /* clear usage flag */
+            m_inUse[slotIndex] = false;
+            memset(pBuff, 0, m_slotSize);
             break;
         }
     }
@@ -131,7 +137,7 @@ void CMemoryManager<storageType>::releaseBuffer(storageType const * const pBuff)
  * \return  max number of slots
  */
 template <class storageType>
-size_t CMemoryManager<storageType>::getMaxSlotCount(void)
+size_t CMemoryManager<storageType>::getMaxSlots(void)
 {
     return m_maxSlots;
 }
