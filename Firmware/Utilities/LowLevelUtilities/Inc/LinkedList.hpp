@@ -51,8 +51,8 @@ class CNode
 using node_t = CNode<MyType>;
 
 public:
-    CNode(MyType * pData, node_t * pPrevious = nullptr, node_t * pNext = nullptr);
-    void populateNode(MyType * pData, node_t * pNext, node_t * pPrevious);
+    CNode(MyType const * const pData, node_t const * const pPrevious = nullptr, node_t const * const pNext = nullptr);
+    void populateNode(MyType const * const pData, node_t * pNext, node_t * pPrevious);
     void flushNode(void);
     void getData(MyType * pData);
     node_t * getPrevious(void);
@@ -78,18 +78,18 @@ using node_t = CNode<MyType>;
 public:
     CLinkedList(void * pTable = nullptr, size_t size = 0);
     ~CLinkedList() = default;
-    int32_t pushToFront(MyType * pData);
-    int32_t pushToBack(MyType * pData);
-    int32_t pushBefore(node_t * pNextNode, MyType * pData);
-    int32_t pushAfter(node_t * pPrevNode, MyType * pData);
-    int32_t popFromFront(MyType * pData);
-    int32_t popFromBack(MyType * pData);
+    int32_t pushToFront(MyType const * const pData);
+    int32_t pushToBack(MyType const * const pData);
+    int32_t pushBefore(node_t const * const pNextNode, MyType const * const pData);
+    int32_t pushAfter(node_t const * const pPrevNode, MyType const * const pData);
+    int32_t popFromFront(MyType const * const pData);
+    int32_t popFromBack(MyType const * const pData);
     int32_t popFromNode(uint32_t nodeID, MyType * pData);
     int32_t peakFromNode(uint32_t nodeID, MyType * pData);
     size_t countNodes(void);
     size_t getMaxNodes(void);
     bool deleteNode(size_t nodeID);
-    void * findData(MyType * pData, bool findFirst);
+    void * findData(MyType const * const pData, bool findFirst);
     void * findNode(uint32_t nodeID);
 
 private:
@@ -117,7 +117,7 @@ INLINE FUNCTION DEFINITIONS
  * \return  None
  */
 template <class MyType>
-CNode<MyType>::CNode(MyType * pData, node_t * pPrevious, node_t * pNext)
+CNode<MyType>::CNode(MyType const * const pData, node_t const * const pPrevious, node_t const * const pNext)
     : m_data(* pData)
     , m_pPrevious(pPrevious)
     , m_pNext(pNext)
@@ -132,7 +132,7 @@ CNode<MyType>::CNode(MyType * pData, node_t * pPrevious, node_t * pNext)
  * \return  None
  */
 template <class MyType>
-void CNode<MyType>::populateNode(MyType * pData, node_t * pNext, node_t * pPrevious)
+void CNode<MyType>::populateNode(MyType const * const pData, node_t * pNext, node_t * pPrevious)
 {
     (void)memcpy(&m_data, pData, sizeof(MyType));                               /* copy the data in to the node */
     m_pNext = pNext;
@@ -183,7 +183,7 @@ CNode<MyType> * CNode<MyType>::getPrevious(void)
  * \return  None
  */
 template <class MyType>
-void CNode<MyType>::setPrevious(CNode<MyType> * pPrevious)
+void CNode<MyType>::setPrevious(node_t * pPrevious)
 {
     m_pPrevious = pPrevious;
 }
@@ -207,7 +207,7 @@ CNode<MyType> * CNode<MyType>::getNext(void)
  * \return  pointer to next node
  */
 template <class MyType>
-void CNode<MyType>::setNext(CNode<MyType> * pNext)
+void CNode<MyType>::setNext(node_t * pNext)
 {
     m_pNext = pNext;
 }
@@ -231,10 +231,11 @@ inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
     , m_pHead(nullptr)
 {
     memset(m_pTable, 0, size);
-    for(auto i = 0; i < m_length; ++i)
+    for(auto i = 0u; i < m_length; ++i)
     {
-        m_pTable[i].setNext((i < (m_length - 1)) ? &m_pTable[i + 1] : nullptr);
-        m_pTable[i].setPrevious((i == 0) ? nullptr : &m_pTable[i - 1]);
+        node_t * pTable = &m_pTable[i];
+        pTable->setNext((i < (m_length - 1))    ? &pTable[1]    : nullptr);
+        pTable->setPrevious((i == 0)            ? nullptr       : &pTable[-1]);
     }
 }
 
@@ -246,7 +247,7 @@ inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
  * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::pushToFront(MyType * pData)
+inline int32_t CLinkedList<MyType>::pushToFront(MyType const * const pData)
 {
     int32_t returnVal = LL_FAIL;
     node_t * pNewNode = newNode();
@@ -280,7 +281,7 @@ inline int32_t CLinkedList<MyType>::pushToFront(MyType * pData)
  * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::pushToBack(MyType * pData)
+inline int32_t CLinkedList<MyType>::pushToBack(MyType const * const pData)
 {
     int32_t returnVal = LL_FAIL;
     node_t * pNewNode = newNode();                                               /* allocate node */
@@ -318,7 +319,7 @@ inline int32_t CLinkedList<MyType>::pushToBack(MyType * pData)
  * \return  LL_SUCCESS on successful allocation else LL_FAILED
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::pushBefore(node_t * pNextNode, MyType * pData)
+inline int32_t CLinkedList<MyType>::pushBefore(node_t const * const pNextNode, MyType const * const pData)
 {
     int32_t returnVal = LL_FAIL;
     node_t * newNode = newNode();                                               /* allocate node */
@@ -350,7 +351,7 @@ inline int32_t CLinkedList<MyType>::pushBefore(node_t * pNextNode, MyType * pDat
  * \return  LL_SUCCESS on successful allocation else LL_FAILED
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::pushAfter(node_t * pPrevNode, MyType * pData)
+inline int32_t CLinkedList<MyType>::pushAfter(node_t const * const pPrevNode, MyType const * const pData)
 {
     int32_t returnVal = LL_FAIL;
     node_t * newNode = newNode();                                               /* allocate node */
@@ -381,7 +382,7 @@ inline int32_t CLinkedList<MyType>::pushAfter(node_t * pPrevNode, MyType * pData
  * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::popFromFront(MyType * pData)
+inline int32_t CLinkedList<MyType>::popFromFront(MyType const * const pData)
 {
     return popFromNode(0, pData);
 }
@@ -393,7 +394,7 @@ inline int32_t CLinkedList<MyType>::popFromFront(MyType * pData)
  * \return  LL_SUCCESS on successful allocation else LL_FAIL
  */
 template <class MyType>
-inline int32_t CLinkedList<MyType>::popFromBack(MyType * pData)
+inline int32_t CLinkedList<MyType>::popFromBack(MyType const * const pData)
 {
     return popFromNode(countNodes(), pData);
 }
@@ -496,7 +497,7 @@ inline bool CLinkedList<MyType>::deleteNode(size_t nodeID)
  * \return  pointer to node containing the datum
  */
 template <class MyType>
-inline void * CLinkedList<MyType>::findData(MyType * pData, bool findFirst)
+inline void * CLinkedList<MyType>::findData(MyType const * const pData, bool findFirst)
 {
     node_t * returnVal = nullptr;
     node_t * node = m_pHead;
@@ -579,7 +580,7 @@ CNode<MyType> * CLinkedList<MyType>::newNode(void)
  * \return  None
  */
 template <class MyType>
-void CLinkedList<MyType>::freeNode(CNode<MyType> * pNode)
+void CLinkedList<MyType>::freeNode(node_t * pNode)
 {
     if(pNode)
     {
