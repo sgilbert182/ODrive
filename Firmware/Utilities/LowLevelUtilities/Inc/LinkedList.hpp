@@ -20,7 +20,6 @@ INCLUDES
 
 #include "stddef.h"
 #include "stdint.h"
-#include "MemoryHandler.hpp"
 #include "string.h"
 
 /*******************************************************************************
@@ -94,11 +93,14 @@ public:
     void * findNode(uint32_t nodeID);
 
 private:
+    node_t * newNode(void);
+    void freeNode(node_t * pNode);
     bool removeNode(node_t * pDelete);
 
 private:
-    CMemoryManager<node_t> m_table;                                             /* pointer to the data storage table */
+    node_t * m_pTable;
     size_t m_length;                                                            /* length of the list */
+    size_t m_activeNodes;                                                       /* nodes in list */
     node_t * m_pHead;                                                           /* pointer to the first node in the chain */
 };
 
@@ -223,10 +225,18 @@ void CNode<MyType>::setNext(CNode<MyType> * pNext)
  */
 template <class MyType>
 inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
-    : m_table((node_t *)pTable, size)
-    , m_length(m_table.getMaxSlots())
+    : m_pTable((node_t *)pTable)
+    , m_length(size / sizeof(node_t))
+    , m_activeNodes(0)
     , m_pHead(nullptr)
-{}
+{
+    memset(m_pTable, 0, size);
+    for(auto i = 0; i < m_length; ++i)
+    {
+        m_pTable[i].setNext((i < (m_length - 1)) ? &m_pTable[i + 1] : nullptr);
+        m_pTable[i].setPrevious((i == 0) ? nullptr : &m_pTable[i - 1]);
+    }
+}
 
 /**\brief   Push data element to the front of the list
  *
@@ -239,23 +249,23 @@ template <class MyType>
 inline int32_t CLinkedList<MyType>::pushToFront(MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * newNode = m_table.getBuffer();
+    node_t * pNewNode = newNode();
 
-    if (nullptr != newNode)
+    if (nullptr != pNewNode)
     {
         /* copy in the data to the node and make 'next' of the new node point to
          * current m_pHead and set 'previous' pointer to nullptr
          */
-        newNode->populateNode(pData, m_pHead, nullptr);
+        pNewNode->populateNode(pData, m_pHead, nullptr);
 
         /* set 'previous' of head node to new node */
         if (nullptr != m_pHead)
         {
-            m_pHead->m_pPrevious = newNode;
+            m_pHead->setPrevious(pNewNode);
         }
 
         /* set the head pointer to point to the new node */
-        m_pHead = newNode;
+        m_pHead = pNewNode;
 
         returnVal = LL_SUCCESS;
     }
@@ -273,25 +283,25 @@ template <class MyType>
 inline int32_t CLinkedList<MyType>::pushToBack(MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * newNode = m_table.getBuffer();                                     /* allocate node */
+    node_t * pNewNode = newNode();                                               /* allocate node */
 
-    if (nullptr != newNode)
+    if (nullptr != pNewNode)
     {
-        node_t * last = (node_t *)findNode(countNodes());
+        node_t * last = (node_t *)findNode((countNodes() - 1));
 
         /* copy in the data to the node, this new node is going to be the last
          * node in the chain, so make 'next' pointer nullptr
          */
-        newNode->populateNode(pData, nullptr, last);
+        pNewNode->populateNode(pData, nullptr, last);
 
         /* Make last node as previous of new node */
         if(nullptr != last)
         {
-            last->setNext(newNode);                                             /* Change the next of last node */
+            last->setNext(pNewNode);                                            /* Change the next of last node */
         }
         else
         {
-            m_pHead = newNode;
+            m_pHead = pNewNode;
         }
 
         returnVal = LL_SUCCESS;
@@ -311,7 +321,7 @@ template <class MyType>
 inline int32_t CLinkedList<MyType>::pushBefore(node_t * pNextNode, MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * newNode = m_table.getBuffer();                                     /* allocate node */
+    node_t * newNode = newNode();                                               /* allocate node */
 
     if (nullptr != pNextNode)                                                   /* check if the given next_node is NULL */
     {
@@ -343,7 +353,7 @@ template <class MyType>
 inline int32_t CLinkedList<MyType>::pushAfter(node_t * pPrevNode, MyType * pData)
 {
     int32_t returnVal = LL_FAIL;
-    node_t * newNode = m_table.getBuffer();                                     /* allocate node */
+    node_t * newNode = newNode();                                               /* allocate node */
 
     if (nullptr != pPrevNode)                                                   /* check if the given prev_node is NULL */
     {
@@ -439,20 +449,7 @@ inline int32_t CLinkedList<MyType>::peakFromNode(uint32_t nodeID, MyType * pData
 template <class MyType>
 inline size_t CLinkedList<MyType>::countNodes(void)
 {
-    size_t count = 0;
-    node_t * pLast = m_pHead;
-
-    if (nullptr != pLast)
-    {
-        ++count;
-        while (nullptr != pLast->getNext())                                     /* Traverse to the last node */
-        {
-            ++count;
-            pLast = pLast->getNext();
-        }
-    }
-
-    return count;
+    return m_activeNodes;
 }
 
 /**\brief   returns the maximum number of elements the list can hold
@@ -549,6 +546,51 @@ inline void * CLinkedList<MyType>::findNode(uint32_t nodeID)
     return (void *)node;
 }
 
+
+/**\brief   Assigns a node from the inactive pool
+ *
+ * \param   None
+ *
+ * \return  pointer to the new node
+ */
+template <class MyType>
+CNode<MyType> * CLinkedList<MyType>::newNode(void)
+{
+    CNode<MyType> * pNewNode = nullptr;
+
+    if(m_activeNodes < m_length)
+    {
+        pNewNode = m_pTable;
+        m_pTable = m_pTable->getNext();
+
+        if(pNewNode)
+        {
+            ++m_activeNodes;
+        }
+    }
+
+    return pNewNode;
+}
+
+/**\brief   Returns the node to the inactive pool
+ *
+ * \param   pDelete - pointer to node to delete
+ *
+ * \return  None
+ */
+template <class MyType>
+void CLinkedList<MyType>::freeNode(CNode<MyType> * pNode)
+{
+    if(pNode)
+    {
+        pNode->setPrevious(nullptr);
+        pNode->setNext(m_pTable);
+        m_pTable->setPrevious(pNode);
+        m_pTable = pNode;
+        --m_activeNodes;
+    }
+}
+
 /**\brief   Deletes node in list and corrects the nodes either side to maintain
  *          the linked list chain.
  *
@@ -583,7 +625,7 @@ inline bool CLinkedList<MyType>::removeNode(node_t * pDelete)
         }
 
         pDelete->flushNode();
-        m_table.releaseBuffer(pDelete);
+        freeNode(pDelete);
         returnVal = LL_SUCCESS;
     }
 
