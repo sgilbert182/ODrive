@@ -1,5 +1,5 @@
 /*******************************************************************************
-* File          : DebounceTask.hpp
+* File          : SubscribeBase.hpp
 *
 * Description   : 
 *
@@ -7,30 +7,32 @@
 *
 * Author        : s.gilbert
 *
-* Created on    : 20 Feb 2020
+* Created on    : 19 Feb 2020
 *
 *******************************************************************************/
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef DEBOUNCETASK_HPP
-#define DEBOUNCETASK_HPP
+#ifndef SUBSCRIPTIONTOOLS_HPP
+#define SUBSCRIPTIONTOOLS_HPP
 
 /******************************************************************************
 INCLUDES
 *******************************************************************************/
 
-#include "cmsis_os.h"
-#include "GPIODebounceTools.hpp"
-#include "SubscribeDebounce.hpp"
+#include "LinkedList.hpp"
+#include "stm32F405xx.h"
+#include "stm32f4xx_hal.h"
+#include "freeRTOS.h"
+#include "semphr.h"
 
 /*******************************************************************************
 DEFINITIONS
 *******************************************************************************/
 
-#define DBTASKFREQUENCY_MS    (1)
-
 /*******************************************************************************
 TYPES
 *******************************************************************************/
+
+typedef void (* callbackFuncPtr_t)(void *);
 
 /*******************************************************************************
 GLOBAL VARIABLES
@@ -44,36 +46,45 @@ CONSTANTS
 NAMESPACE
 *******************************************************************************/
 
-class CDebounceTask
+/*  Base subscription class, hosts the subscription table and basic tools for
+ *  registering, finding, and deregistering callbacks to pins
+ */
+class CSubscribeBase
 {
 public:
-    CDebounceTask(osThreadDef_t OSThreadDef
-                  , uint32_t period);
-    ~CDebounceTask(void) = default;
-    void start(void);
-    void threadFunc(void * ctx);
-    bool subscribe(GPIO_TypeDef * GPIO_port
-                  , uint16_t GPIO_pin
-                  , uint32_t pull_up_down
-                  , callbackFuncPtr_t callback
-                  , void * ctx);
+    typedef struct
+    {
+      GPIO_TypeDef * GPIO_port;
+      GPIO_InitTypeDef GPIO_InitStruct;
+      callbackFuncPtr_t callback;
+      void * ctx;
+    } subscription_t;
+
+public:
+    CSubscribeBase(void * m_pSubscriptions, size_t size);
+    virtual ~CSubscribeBase(void) = default;
+    bool subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
+                   uint32_t pull_up_down,
+                   callbackFuncPtr_t callback, void * ctx);
+    void unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
+    bool getSubscriptionList(uint32_t tableID, GPIO_TypeDef ** GPIO_port, uint16_t * GPIO_pin);
+    size_t getSubscriptionCount(void);
+    callbackFuncPtr_t getCallback(uint32_t listID);
 
 private:
-    void updateIOs(uint32_t subscribeCount);
-    void checkDebouncedIOs(uint32_t subscribeCount);
-    bool isAsserted(uint32_t GPIOID);
-    static void _ThdFunc(void * pArg);
+    int32_t findActiveSubscription(GPIO_TypeDef* GPIO_port
+                                            , uint16_t GPIO_pin);
+    virtual void configureGPIO(subscription_t * pSubscription) = 0;
+    virtual void unconfigureGPIO(subscription_t * pSubscription) = 0;
 
 private:
-    osThreadDef_t m_OSThreadDef;
-    osThreadId m_threadID;
-    uint32_t m_periodMS;
-    CGPIOData GPIOData;
-    CSubscribeDebounce m_subscribedGPIOs;
+    CLinkedList<subscription_t> subscriptionList;
+//    StaticSemaphore_t xSemaphoreBuffer;
+    SemaphoreHandle_t xSemaphore;
 };
 
 /*******************************************************************************
 INLINE FUNCTION DEFINITIONS
 *******************************************************************************/
 
-#endif /* DEBOUNCETASK_HPP */
+#endif /* SUBSCRIPTIONTOOLS_HPP */

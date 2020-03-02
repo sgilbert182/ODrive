@@ -176,7 +176,9 @@ build{
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
 		'Utilities/LowLevelUtilities/Src/GPIODebounceTools.cpp',
-		'Utilities/LowLevelUtilities/Src/SubscriptionTools.cpp',
+		'Utilities/LowLevelUtilities/Src/SubscribeBase.cpp',
+		'Utilities/LowLevelUtilities/Src/SubscribeEXTI.cpp',
+		'Utilities/LowLevelUtilities/Src/SubscribeDebounce.cpp',
 		'Tasks/Src/DebounceTask.cpp',
         'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c'

@@ -10,7 +10,7 @@
 
 #ifdef __cplusplus
 #include <fibre/protocol.hpp>
-#include "SubscriptionTools.hpp"
+#include "SubscribeEXTI.hpp"
 
 extern CSubscribeEXTI SubscribeEXTI;
 
