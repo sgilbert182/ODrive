@@ -62,6 +62,9 @@ Axis *axes[AXIS_COUNT];
 
 CDebounceTask debounceTask(os_thread_def_debounce, DBTASKFREQUENCY_MS);
 
+uint8_t EXTIsubscriptionTable[10 * sizeof(CNode<CSubscribeDebounce::subscription_t>)]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time
+CSubscribeEXTI SubscribeEXTI(EXTIsubscriptionTable, sizeof(EXTIsubscriptionTable));
+
 typedef Config<
     BoardConfig_t,
     Encoder::Config_t[AXIS_COUNT],
