@@ -47,7 +47,7 @@ MODULE VARIABLES
 *******************************************************************************/
 
 uint8_t subscriptionTable[(sizeof(CNode<CSubscribeDebounce::subscription_t>) + sizeof(bool))]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time.
-uint32_t debounceTable[DEBOUNCE_TIME_MS * DBTASKFREQUENCY_MS];                  //  x debounce stabilisiation period x task frequency
+uint32_t debounceTable[DEBOUNCE_TIME_MS * DBTASKFREQUENCY_MS];                  //  debounce stabilisiation period x task frequency
 
 /*******************************************************************************
 MODULE FUNCTION DECLARATIONS
@@ -59,13 +59,13 @@ FUNCTION DEFINITIONS
 
 /**\brief   Constructor.
  *
- * \param   pTable      - pointer to the subscription table space
- * \param   maxEntries  - size of table space
+ * \param   pTable  - pointer to the subscription table space
+ * \param   size    - byte count of allocated memory
  *
  * \return  returns pointer to active subscription or nullptr if not found
  */
-CSubscribeDebounce::CSubscribeDebounce(void * pTable, size_t maxEntries)
-    : CSubscribeBase(pTable, maxEntries)
+CSubscribeDebounce::CSubscribeDebounce(void * pTable, size_t size)
+    : CSubscribeBase(pTable, size)
 {}
 
 /**\brief   Configures GPIO for de-bouncing.

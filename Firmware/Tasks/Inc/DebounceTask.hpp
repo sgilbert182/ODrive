@@ -48,7 +48,7 @@ class CSubscribeDebounce
     : public CSubscribeBase
 {
 public:
-    CSubscribeDebounce(void * pTable, size_t maxEntries);
+    CSubscribeDebounce(void * pTable, size_t size);
     ~CSubscribeDebounce() = default;
 
 private:
