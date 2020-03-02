@@ -192,6 +192,12 @@ void SetGPIO12toUART() {
   GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
   HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
 }
+
+void test(void * pTest)
+{
+    __asm__("BKPT");
+}
+
 int odrive_main(void) {
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
