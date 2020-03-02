@@ -235,8 +235,6 @@ int odrive_main(void) {
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
 #endif
 
-    debounceTask.start();
-
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
@@ -251,6 +249,8 @@ int odrive_main(void) {
                 *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
     
+    debounceTask.start();
+    debounceTask.subscribe(GPIO_1_GPIO_Port, GPIO_2_Pin, GPIO_PULLUP, test, nullptr);
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
