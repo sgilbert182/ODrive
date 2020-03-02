@@ -60,9 +60,7 @@ SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
 
-#define DEBOUNCE_TIME_MS (10)
-CSubscribeDebounce::subscription_t subscriptionTable[10]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time
-CDebounceTask debounceTask(os_thread_def_debounce, DEBOUNCE_TIME_MS, subscriptionTable, ARRAY_LEN(subscriptionTable));
+CDebounceTask debounceTask(os_thread_def_debounce, DBTASKFREQUENCY_MS);
 
 typedef Config<
     BoardConfig_t,
