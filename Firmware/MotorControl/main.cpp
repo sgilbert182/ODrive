@@ -168,6 +168,30 @@ void vApplicationIdleHook(void) {
 }
 }
 
+
+// @brief Puts the GPIO's 1 and 2 into UART mode.
+// This will disable any interrupt subscribers of these GPIOs.
+void SetGPIO12toUART() {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  // make sure nothing is hogging the GPIO's
+  SubscribeEXTI.unsubscribe(GPIO_1_GPIO_Port, GPIO_1_Pin);
+  SubscribeEXTI.unsubscribe(GPIO_2_GPIO_Port, GPIO_2_Pin);
+
+  GPIO_InitStruct.Pin = GPIO_1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+  HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = GPIO_2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+  HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
+}
 int odrive_main(void) {
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
