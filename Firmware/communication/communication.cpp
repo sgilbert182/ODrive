@@ -188,7 +188,7 @@ uint8_t tree_buffer[sizeof(tree_type)];
 
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
-void communication_task(void * ctx) {
+void communication_task(void const * ctx) {
     (void) ctx; // unused parameter
 
     // TODO: this is supposed to use the move constructor, but currently

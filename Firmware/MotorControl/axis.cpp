@@ -72,14 +72,14 @@ void Axis::setup() {
     motor_.setup();
 }
 
-static void run_state_machine_loop_wrapper(void* ctx) {
-    reinterpret_cast<Axis*>(ctx)->run_state_machine_loop();
-    reinterpret_cast<Axis*>(ctx)->thread_id_valid_ = false;
+void Axis::run_state_machine_loop_wrapper(void const * ctx) {
+    ((Axis *)(ctx))->run_state_machine_loop();
+    ((Axis *)(ctx))->thread_id_valid_ = false;
 }
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
+    osThreadDef(thread_def, (void (*)(void const *))&this->run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }

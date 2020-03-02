@@ -62,7 +62,7 @@ StreamBasedPacketSink uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
 StreamToPacketSegmenter uart4_stream_input(uart4_channel);
 
-static void uart_server_thread(void * ctx) {
+static void uart_server_thread(void const * ctx) {
     (void) ctx;
 
     for (;;) {

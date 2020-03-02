@@ -96,6 +96,7 @@ public:
             TrapezoidalTrajectory& trap);
 
     void setup();
+    static void run_state_machine_loop_wrapper(void const * ctx);
     void start_thread();
     void signal_current_meas();
     bool wait_for_current_meas();
@@ -189,6 +190,10 @@ public:
     bool run_idle_loop();
 
     void run_state_machine_loop();
+    void set_thread_id_valid_(bool valid)
+    {
+        thread_id_valid_ = valid;
+    }
 
     int axis_num_;
     const AxisHardwareConfig_t& hw_config_;

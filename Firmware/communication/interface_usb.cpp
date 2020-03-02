@@ -114,12 +114,12 @@ static USBInterface ODrive_interface = {
     .usb_sender = usb_packet_output_native,
 };
 
-static void usb_server_thread(void * ctx) {
+static void usb_server_thread(void const * ctx) {
     (void) ctx;
     
     for (;;) {
         // const uint32_t usb_check_timeout = 1; // ms
-        osStatus sem_stat = osSemaphoreWait(sem_usb_rx, osWaitForever);
+        int32_t sem_stat = osSemaphoreWait(sem_usb_rx, osWaitForever);
         if (sem_stat == osOK) {
             usb_stats_.rx_cnt++;
 

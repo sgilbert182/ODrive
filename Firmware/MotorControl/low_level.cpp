@@ -738,7 +738,7 @@ static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
     get_endpoint(map->endpoint)->set_from_float(value);
 }
 
-static void analog_polling_thread(void *)
+static void analog_polling_thread(void const *)
 {
     while (true) {
         for (int i = 0; i < GPIO_COUNT; i++) {
