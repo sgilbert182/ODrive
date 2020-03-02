@@ -60,14 +60,6 @@ SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
 
-const osThreadDef_t os_thread_def_debounce = {
-        DebounceTask.pThreadName,
-        nullptr,    // this gets populated in the task.start routine
-        DebounceTask.priority,
-        0,
-        DebounceTask.stackSize
-};
-
 #define DEBOUNCE_TIME_MS (10)
 CSubscribeDebounce::subscription_t subscriptionTable[10]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time
 CDebounceTask debounceTask(os_thread_def_debounce, DEBOUNCE_TIME_MS, subscriptionTable, ARRAY_LEN(subscriptionTable));

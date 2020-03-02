@@ -19,6 +19,7 @@ INCLUDES
 #include "stm32f4xx_hal.h"
 #include "stm32f405xx.h"
 #include "stdint.h"
+#include "TaskConfigs.hpp"
 
 /*******************************************************************************
 NAMESPACE
@@ -41,6 +42,14 @@ CONSTANTS
 /*******************************************************************************
 GLOBAL VARIABLES
 *******************************************************************************/
+
+const osThreadDef_t os_thread_def_debounce = {
+        DebounceTask.pThreadName,
+        nullptr,    // this gets populated in the task.start routine
+        DebounceTask.priority,
+        0,
+        DebounceTask.stackSize
+};
 
 /*******************************************************************************
 MODULE VARIABLES
