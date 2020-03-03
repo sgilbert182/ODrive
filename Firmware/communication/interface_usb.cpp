@@ -137,7 +137,7 @@ static void usb_server_thread(void const * ctx) {
                             CDC_interface.rx_buf, CDC_interface.rx_len, nullptr);
 #endif
                 }
-                USBD_CDC_ReceivePacket(&hUsbDeviceFS, CDC_interface.out_ep);  // Allow next packet
+                USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
             }
 
             // Native Interface
@@ -149,7 +149,7 @@ static void usb_server_thread(void const * ctx) {
                 usb_native_stream_input.process_bytes(
                         ODrive_interface.rx_buf, ODrive_interface.rx_len, nullptr);
 #endif
-                USBD_CDC_ReceivePacket(&hUsbDeviceFS, ODrive_interface.out_ep);  // Allow next packet
+                USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
             }
         }
     }

@@ -4,6 +4,7 @@
 #include <float.h>
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
+#include "main.h"
 
 
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {

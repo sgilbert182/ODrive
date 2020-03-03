@@ -11,6 +11,8 @@ extern "C" {
 #include <cmsis_os.h>
 #include <stdint.h>
 
+#include "usbd_def.h"
+
 extern osThreadId usb_thread;
 
 typedef struct {
@@ -20,6 +22,8 @@ typedef struct {
 } USBStats_t;
 
 extern USBStats_t usb_stats_;
+
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
 void start_usb_server(void);

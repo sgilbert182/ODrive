@@ -29,6 +29,7 @@
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include "arm_math.h"
 #include "arm_common_tables.h"
+
 /**
  * @ingroup groupFastMath
  */

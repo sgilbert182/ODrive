@@ -134,8 +134,11 @@ end
 
 -- TODO: cleaner separation of the platform code and the rest
 stm_includes += '.'
-stm_includes += 'Drivers/DRV8301'
+stm_includes += 'Drivers/DRV8301'	
+stm_includes += 'Board/v3/Drivers/CMSIS/DSP/Include'
 stm_sources += boarddir..'/Src/syscalls.c'
+stm_sources += boarddir..'/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_bitreversal.c'
+
 build{
     name='stm_platform',
     type='objects',
