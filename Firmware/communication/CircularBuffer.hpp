@@ -44,6 +44,10 @@ typedef enum
 TYPES
 *******************************************************************************/
 
+#ifndef ARRAY_LEN
+#define ARRAY_LEN(x) sizeof(x) / sizeof(x[0])
+#endif
+
 /*******************************************************************************
 GLOBAL VARIABLES
 *******************************************************************************/
@@ -73,34 +77,28 @@ public:
 
     CCBBuffer(dataType_t * pArray = nullptr, const size_t size = 0, const bool useMutex = false, const bool overwriteOldData = false);
     ~CCBBuffer() = default;
-    bool isFull();
-    bool isEmpty();
-    size_t remainingSpace();
-    size_t remainingSpaceLinear();
-    size_t usedSpace();
-    size_t usedSpaceLinear();
-    bool flushBuffer();
+    bool init(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData);
+    bool isFull(void);
+    bool isEmpty(void);
+    size_t remainingSpace(void);
+    size_t remainingSpaceLinear(void);
+    size_t usedSpace(void);
+    size_t usedSpaceLinear(void);
+    bool flushBuffer(void);
     int32_t write(const dataType_t * const elem, size_t length);
+    int32_t write(const dataType_t Data);
+    int32_t peak(dataType_t * pData, size_t length);
     int32_t read(dataType_t * elem, size_t length);
     bool readNewest(dataType_t * pData);
+
+private:
+    bool isPowerOfTwo(size_t x);
 
 private:
     circularBuffer_t m_cb;
     bool m_useMutex;
     bool m_overwriteOldData;
-private:
-    /**\brief   Calculates whether a value in the argument is to the power of 2
-     *          by taking the bit pattern of x and logically ANDing it with the bit
-     *          pattern of (x-1). If the result is 0 then the number is = ^2
-     *
-     * \param   x   - value to test
-     *
-     * \return  true if value is non-zero and to the power of 2, else returns false
-     */
-    static bool isPowerOfTwo(size_t x)
-    {
-        return (x != 0u) && ((x & (x - 1u)) == 0u);
-    }
+
 }; /* CCBBuffer */
 
 /*******************************************************************************
@@ -119,10 +117,34 @@ INLINE FUNCTIONS
 template <class dataType_t>
 CCBBuffer<dataType_t>::CCBBuffer(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData)
     : m_cb {{numElements, 0, 0}, pArray}
+    , m_useMutex(useMutex)
     , m_overwriteOldData(overwriteOldData)
 {
 //        assert(this->isPowerOfTwo(size), "The size must be of ^2 otherwise overflow condition of start/end tracker values will corrupt data in buffer ");
     (void)flushBuffer();
+}
+
+/**\brief   initialising function to reconfigure the circular buffer without
+ *          having to reconstruct the class
+ *
+ * \param   pArray              - pointer to external memory
+ * \param   numElements         - number of dataType_t's in ring buffer to be created, must be a value ^2 if doing bulk writes
+ * \param   useMutex            - enables or disables mutex locking. Defaults to false
+ * \param   overwriteOldData    - enables discarding of old data. Defaults to false
+ *
+ * \return  None
+ */
+template <class dataType_t>
+bool CCBBuffer<dataType_t>::init(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData)
+{
+    this.m_cb.tracker.numElements = numElements;
+    this.m_cb.tracker.start = 0;
+    this.m_cb.tracker.end = 0;
+    this.m_cb.pArray = pArray;
+    this.m_useMutex = useMutex;
+    this.m_overwriteOldData = overwriteOldData;
+//        assert(this->isPowerOfTwo(size), "The size must be of ^2 otherwise overflow condition of start/end tracker values will corrupt data in buffer ");
+    return flushBuffer();
 }
 
 /**\brief   Checks if the ring buffer is full
@@ -132,7 +154,7 @@ CCBBuffer<dataType_t>::CCBBuffer(dataType_t * pArray, const size_t numElements, 
  * \return  TRUE for full FALSE for not
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::isFull()
+bool CCBBuffer<dataType_t>::isFull(void)
 {
     return (((m_cb.tracker.end + 1) % (int32_t)m_cb.tracker.numElements) == m_cb.tracker.start);
 }
@@ -144,7 +166,7 @@ bool CCBBuffer<dataType_t>::isFull()
  * \return  FALSE for non-empty TRUE for not
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::isEmpty()
+bool CCBBuffer<dataType_t>::isEmpty(void)
 {
     return (m_cb.tracker.end == m_cb.tracker.start);
 }
@@ -156,7 +178,7 @@ bool CCBBuffer<dataType_t>::isEmpty()
  * \return  Unused space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::remainingSpace()
+size_t CCBBuffer<dataType_t>::remainingSpace(void)
 {
     return (m_cb.tracker.numElements - usedSpace());
 }
@@ -169,16 +191,16 @@ size_t CCBBuffer<dataType_t>::remainingSpace()
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::remainingSpaceLinear()
+size_t CCBBuffer<dataType_t>::remainingSpaceLinear(void)
 {
-size_t length = 0;
+    size_t length = 0;
 
 /* if end is less than start index then data goes from start pointer to size of
  * array and start of array to end index. free space exists between end index
  * and start index. If start is less than end index, then data goes from end
  * index to numElements of array and start of array to start index.
  */
-    if ((m_overwriteOldData) || !isFull())
+    if (!isFull())
     {
         length = (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.start : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
     }
@@ -193,7 +215,7 @@ size_t length = 0;
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::usedSpace()
+size_t CCBBuffer<dataType_t>::usedSpace(void)
 {
     return (size_t)(m_cb.tracker.end + ((m_cb.tracker.end < m_cb.tracker.start) ? (int32_t)m_cb.tracker.numElements : 0) - m_cb.tracker.start);
 }
@@ -206,7 +228,7 @@ size_t CCBBuffer<dataType_t>::usedSpace()
  * \return  Used space in buffer
  */
 template <class dataType_t>
-size_t CCBBuffer<dataType_t>::usedSpaceLinear()
+size_t CCBBuffer<dataType_t>::usedSpaceLinear(void)
 {
     return (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? (int32_t)m_cb.tracker.numElements : m_cb.tracker.end) - m_cb.tracker.start);
 }
@@ -218,14 +240,14 @@ size_t CCBBuffer<dataType_t>::usedSpaceLinear()
  * \return  TRUE if successful FALSE if fail
  */
 template <class dataType_t>
-bool CCBBuffer<dataType_t>::flushBuffer()
+bool CCBBuffer<dataType_t>::flushBuffer(void)
 {
     if(m_useMutex)
     {
 
     }
 
-    memset(m_cb.pArray, 0, (m_cb.tracker.numElements * sizeof(dataType_t)));
+    memset(m_cb.pArray, 0, (m_cb.tracker.numElements * sizeof(m_cb.pArray[0])));
     m_cb.tracker.start = 0;
     m_cb.tracker.end   = 0;
 
@@ -264,15 +286,56 @@ int32_t CCBBuffer<dataType_t>::write(const dataType_t * const pData, size_t leng
             }
             else                                                                /* else */
             {
-                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the neccessary elements */
+                m_cb.tracker.start = ((m_cb.tracker.start + toWrite) % (int32_t)m_cb.tracker.numElements);     /* make space by move the start pointer forward the necessary elements */
             }
         }
 
-        memcpy(&m_cb.pArray[m_cb.tracker.end], &pData[writeCnt], toWrite * sizeof(dataType_t));
+        memcpy(&m_cb.pArray[m_cb.tracker.end], &pData[writeCnt], toWrite * sizeof(m_cb.pArray[0]));
         m_cb.tracker.end = ((m_cb.tracker.end + toWrite) % (int32_t)m_cb.tracker.numElements);
     }
 
     return writeCnt;
+}
+
+/**\brief   Writes a number of elements to the buffer, exiting if buffer is full
+ *
+ * \param   Data    - Single data element to be stored
+ *
+ * \return  number of entries written
+ */
+template <class dataType_t>
+int32_t CCBBuffer<dataType_t>::write(const dataType_t Data)
+{
+    return write(&Data, 1);
+}
+
+/**\brief   peaks at a length of data starting from oldest element. Does not remove from buffer
+ *
+ * \param   pData   - Pointer to place where data is to be returned
+ * \param   length  - number of entries to be read from the buffer
+ *
+ * \return  number of elements read
+ */
+template <class dataType_t>
+int32_t CCBBuffer<dataType_t>::peak(dataType_t * pData, size_t length)
+{
+    int32_t readCnt = 0;
+    size_t toRead = 0;
+
+    if(m_useMutex)
+    {
+
+    }
+
+    for (readCnt = 0; (!isEmpty() && readCnt < (int32_t)length); readCnt =+ toRead)
+    {
+        size_t linearLength = usedSpaceLinear();
+        size_t leftToRead = length - readCnt;
+        toRead = (leftToRead < linearLength) ? leftToRead : linearLength;
+        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(m_cb.pArray[0]));
+    }
+
+    return readCnt;
 }
 
 /**\brief   Reads a length of data starting from oldest element.
@@ -298,7 +361,7 @@ int32_t CCBBuffer<dataType_t>::read(dataType_t * pData, size_t length)
         size_t linearLength = usedSpaceLinear();
         size_t leftToRead = length - readCnt;
         toRead = (leftToRead < linearLength) ? leftToRead : linearLength;
-        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(dataType_t));
+        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(m_cb.pArray[0]));
         m_cb.tracker.start = ((m_cb.tracker.start + toRead) % (int32_t)m_cb.tracker.numElements);
     }
 
@@ -328,6 +391,20 @@ bool CCBBuffer<dataType_t>::readNewest(dataType_t * pData)
     }
 
     return !empty;
+}
+
+/**\brief   Calculates whether a value in the argument is to the power of 2
+ *          by taking the bit pattern of x and logically ANDing it with the bit
+ *          pattern of (x-1). If the result is 0 then the number is = ^2
+ *
+ * \param   x   - value to test
+ *
+ * \return  true if value is non-zero and to the power of 2, else returns false
+ */
+template <class dataType_t>
+bool CCBBuffer<dataType_t>::isPowerOfTwo(size_t x)
+{
+    return (x != 0u) && ((x & (x - 1u)) == 0u);
 }
 
 #endif /* CIRCULAR_BUFFER_H --------------------------------------------------*/
