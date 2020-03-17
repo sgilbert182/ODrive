@@ -79,12 +79,12 @@ public:
     };
 
     struct LockinConfig_t {
-        float current = 10.0f;           // [A]
-        float ramp_time = 0.4f;          // [s]
-        float ramp_distance = 1 * M_PI;  // [rad]
-        float accel = 20.0f;     // [rad/s^2]
-        float vel = 40.0f; // [rad/s]
-        float finish_distance = 100.0f;  // [rad]
+        float current = 10.0f;                                                  // [A]
+        float ramp_time = 0.4f;                                                 // [s]
+        float ramp_distance = 1 * M_PI;                                         // [rad]
+        float accel = 20.0f;                                                    // [rad/s^2]
+        float vel = 40.0f;                                                      // [rad/s]
+        float finish_distance = 100.0f;                                         // [rad]
         bool finish_on_vel = false;
         bool finish_on_distance = false;
         bool finish_on_enc_idx = false;
@@ -95,14 +95,15 @@ public:
     static LockinConfig_t default_lockin();
 
     struct Config_t {
-        bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
-        bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
-                                                // this only has an effect if encoder.config.use_index is also true
-        bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
-        bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
-        bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
-        bool enable_step_dir = false; //<! enable step/dir input after calibration
-                                    //   For M0 this has no effect if enable_uart is true
+        bool startup_motor_calibration = false;                                 //<! run motor calibration at startup, skip otherwise
+        bool startup_encoder_index_search = false;                              //<! run encoder index search after startup, skip otherwise
+                                                                                // this only has an effect if encoder.config.use_index is also true
+        bool startup_encoder_offset_calibration = false;                        //<! run encoder offset calibration after startup, skip otherwise
+        bool startup_closed_loop_control = false;                               //<! enable closed loop control after calibration/startup
+        bool startup_sensorless_control = false;                                //<! enable sensorless control after calibration/startup
+        bool startup_homing = false;                                            //<! enable homing after calibration/startup
+        bool enable_step_dir = false;                                           //<! enable step/dir input after calibration
+                                                                                //   For M0 this has no effect if enable_uart is true
         float counts_per_step = 2.0f;
 
         float watchdog_timeout = 0.0f; // [s] (0 disables watchdog)
